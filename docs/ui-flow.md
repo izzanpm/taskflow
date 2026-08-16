@@ -3,19 +3,22 @@
 This document defines the MVP screen inventory and navigation before implementation.
 It complements `PRD.md`, `AGENTS.md`, and `DESIGN.md`.
 
+UI implementation uses shadcn/ui primitives from `components/ui/` with Tailwind CSS
+for layout and screen-specific styling. Screen designs must follow `DESIGN.md`.
+
 ## Screen Inventory
 
-| Screen | Route | Access | Purpose |
-| --- | --- | --- | --- |
-| Login | `/login` | Public | Sign in |
-| Register | `/register` | Public | Create an account |
-| Create Workspace | `/workspaces/new` | Authenticated | Create the first workspace |
-| Board List | `/[workspaceSlug]/boards` | Workspace member | List workspace boards |
-| Board Detail | `/[workspaceSlug]/boards/[boardId]` | Workspace member | Use the Kanban board |
-| Task Detail | Overlay on Board Detail | Workspace member | Edit task, comments, and attachments |
-| Workspace Settings | `/[workspaceSlug]/settings` | Member; admin for mutations | Manage members, roles, and invites |
-| Invite Accept | `/invite/[token]` | Public, then authenticated | Accept an invitation |
-| Profile Settings | `/settings/profile` | Authenticated | Update name and avatar |
+| Screen             | Route                               | Access                      | Purpose                              |
+| ------------------ | ----------------------------------- | --------------------------- | ------------------------------------ |
+| Login              | `/login`                            | Public                      | Sign in                              |
+| Register           | `/register`                         | Public                      | Create an account                    |
+| Create Workspace   | `/workspaces/new`                   | Authenticated               | Create the first workspace           |
+| Board List         | `/[workspaceSlug]/boards`           | Workspace member            | List workspace boards                |
+| Board Detail       | `/[workspaceSlug]/boards/[boardId]` | Workspace member            | Use the Kanban board                 |
+| Task Detail        | Overlay on Board Detail             | Workspace member            | Edit task, comments, and attachments |
+| Workspace Settings | `/[workspaceSlug]/settings`         | Member; admin for mutations | Manage members, roles, and invites   |
+| Invite Accept      | `/invite/[token]`                   | Public, then authenticated  | Accept an invitation                 |
+| Profile Settings   | `/settings/profile`                 | Authenticated               | Update name and avatar               |
 
 ## Primary User Flows
 

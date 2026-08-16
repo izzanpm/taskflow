@@ -27,6 +27,7 @@ screen inventory and navigation flow.
 |--------------------|---------------------------------------------|
 | Framework           | Next.js (App Router) + TypeScript          |
 | Styling             | Tailwind CSS                               |
+| UI Components       | shadcn/ui                                  |
 | Server State         | TanStack Query                             |
 | Drag & Drop          | dnd-kit                                    |
 | Auth                 | Better-Auth (fallback: Auth.js)            |
@@ -135,6 +136,11 @@ places, when it makes a screen easier to read, or when it represents a clear UI
 concept. Examples for this app: `TaskCard`, `BoardColumn`, `InviteMemberDialog`,
 `CommentList`. Do not create components too early.
 
+Use shadcn/ui components from `/components/ui` for shared primitives such as buttons,
+inputs, dialogs, menus, and forms. Add components with the shadcn CLI when available,
+then customize the copied source to match `DESIGN.md` rather than wrapping it in a
+second abstraction layer.
+
 **data/** holds hardcoded/reference content (e.g. priority labels, status options).
 Keep it typed.
 
@@ -236,12 +242,17 @@ For any UI task:
 - Match layout, spacing, padding, font sizes, font hierarchy, colors, border radius,
   shadows, alignment, and proportions.
 - Do not approximate. Do not simplify unless explicitly asked.
+- Prefer existing shadcn/ui primitives before creating a new shared UI primitive.
 
 --
 
 ## Styling Rules
 Use Tailwind CSS utility classes. Do not use CSS Modules or styled-components unless
 it is not possible to style with `className`.
+
+Use shadcn/ui as the component layer on top of Tailwind CSS. Add missing primitives
+with `npx shadcn@latest add <component>` and import them from `@/components/ui`.
+Use `cn()` from `@/lib/utils` when combining conditional or caller-provided classes.
 
 Use the Tailwind version installed in this project. Check `package.json`. Do not
 upgrade without approval.
