@@ -135,9 +135,39 @@ classDiagram
     class User {
         +String id
         +String email
+        +Boolean emailVerified
         +String name
         +String avatarUrl
-        +String passwordHash
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Session {
+        +String id
+        +String userId
+        +String token
+        +DateTime expiresAt
+        +String ipAddress
+        +String userAgent
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Account {
+        +String id
+        +String accountId
+        +String providerId
+        +String userId
+        +String password
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Verification {
+        +String id
+        +String identifier
+        +String value
+        +DateTime expiresAt
         +DateTime createdAt
         +DateTime updatedAt
     }
@@ -232,6 +262,8 @@ classDiagram
     }
 
     User "1" --> "0..*" WorkspaceMember : memberships
+    User "1" --> "0..*" Session : sessions
+    User "1" --> "0..*" Account : accounts
     Workspace "1" --> "0..*" WorkspaceMember : members
     User "1" --> "0..*" Invite : invites sent
     Workspace "1" --> "0..*" Invite : invites
