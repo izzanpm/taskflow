@@ -27,3 +27,4 @@
   validation, loading/error/success states, and shadcn input primitives.
 - Added the English centered login page with Better-Auth sign-in handling, inline
   validation, and accessible loading, error, and success states.
+- Fixed clean CI typechecks by generating Next.js route types before running TypeScript.
