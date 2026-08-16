@@ -243,6 +243,10 @@ For any UI task:
   shadows, alignment, and proportions.
 - Do not approximate. Do not simplify unless explicitly asked.
 - Prefer existing shadcn/ui primitives before creating a new shared UI primitive.
+- Use the local `impeccable` skill for UI/page design work. Before editing UI, run
+  `node .agents/skills/impeccable/scripts/context.mjs --target <path>`, load the
+  applicable playbook and `reference/craft-floor.md`, then inspect responsive states
+  and run the skill's detector on changed targets.
 
 --
 

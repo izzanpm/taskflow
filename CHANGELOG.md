@@ -23,3 +23,7 @@
 - Added Better-Auth account, session, and verification storage to the Prisma schema.
 - Configured Better-Auth email/password authentication with Prisma-backed sessions
   and the Next.js auth route.
+- Added the English centered register page with Better-Auth sign-up handling, inline
+  validation, loading/error/success states, and shadcn input primitives.
+- Added the English centered login page with Better-Auth sign-in handling, inline
+  validation, and accessible loading, error, and success states.
