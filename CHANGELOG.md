@@ -32,3 +32,7 @@
   the login page.
 - Added a temporary sign-out button to the post-login state for validating logout behavior.
 - Added Next.js 16 proxy-based session protection for authenticated dashboard routes.
+- Added the authenticated profile settings page with name and avatar preview, plus
+  accessible loading, error, and success states.
+- Added the session-protected `PATCH /api/profile` mutation with Zod validation for
+  updating a user's name and avatar URL.
