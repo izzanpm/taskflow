@@ -14,7 +14,7 @@ Cloudflare R2 · Resend · Docker
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 20.19+, 22.12+, or 24+
 - Docker & Docker Compose
 - npm
 
@@ -36,15 +36,25 @@ Copy the example file and fill in the values:
 cp .env.example .env
 ```
 
-| Variable               | Description                            |
-| ---------------------- | -------------------------------------- |
-| `DATABASE_URL`         | Postgres connection string             |
-| `AUTH_SECRET`          | Random secret for session signing      |
-| `R2_ACCOUNT_ID`        | Cloudflare R2 account ID               |
-| `R2_ACCESS_KEY_ID`     | R2 access key                          |
-| `R2_SECRET_ACCESS_KEY` | R2 secret key                          |
-| `R2_BUCKET_NAME`       | R2 bucket name for attachments         |
-| `RESEND_API_KEY`       | Resend API key for transactional email |
+Generate a local Better-Auth secret:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+Set the output as `BETTER_AUTH_SECRET` in `.env`. Configure a separate production
+secret and the production app URL in Vercel; never commit either secret.
+
+| Variable               | Description                                      |
+| ---------------------- | ------------------------------------------------ |
+| `DATABASE_URL`         | Postgres connection string                       |
+| `BETTER_AUTH_SECRET`   | Random secret used to sign and encrypt auth data |
+| `BETTER_AUTH_URL`      | Canonical app URL, e.g. `http://localhost:3000`  |
+| `R2_ACCOUNT_ID`        | Cloudflare R2 account ID                         |
+| `R2_ACCESS_KEY_ID`     | R2 access key                                    |
+| `R2_SECRET_ACCESS_KEY` | R2 secret key                                    |
+| `R2_BUCKET_NAME`       | R2 bucket name for attachments                   |
+| `RESEND_API_KEY`       | Resend API key for transactional email           |
 
 ### 3. Start the database (Docker)
 
@@ -66,6 +76,18 @@ npm run dev
 
 App runs at `http://localhost:3000`.
 
+### Production database migrations
+
+Before deploying a version with schema changes, run this command against the
+production `DATABASE_URL` from a trusted environment:
+
+```bash
+npm run db:migrate:deploy
+```
+
+Do not run development migrations (`prisma migrate dev`) in production. Vercel builds
+do not apply migrations automatically.
+
 ## Running the Full Stack via Docker
 
 ```bash
@@ -77,6 +99,7 @@ docker compose up --build
 ```bash
 npm run dev          # start dev server
 npm run build         # production build
+npm run db:migrate:deploy # apply pending production migrations
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
 npm run format         # format source files with Prettier

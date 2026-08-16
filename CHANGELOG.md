@@ -19,3 +19,7 @@
   recorded the Prisma 7 schema representation difference as an open question.
 - Added a GitHub Actions CI workflow for dependency installation, lint, and typecheck
   on pull requests and pushes to `main`.
+- Verified the deployed skeleton at `https://taskflow-nine-alpha-20.vercel.app`.
+- Added Better-Auth account, session, and verification storage to the Prisma schema.
+- Configured Better-Auth email/password authentication with Prisma-backed sessions
+  and the Next.js auth route.

@@ -1,4 +1,10 @@
 .agents/
+.claude/
+.codex/
+.github/agents/
+.github/hooks/
+.github/skills/
 .next/
+.opencode/
 node_modules/
 prisma/migrations/
