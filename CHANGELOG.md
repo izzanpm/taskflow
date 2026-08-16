@@ -28,3 +28,7 @@
 - Added the English centered login page with Better-Auth sign-in handling, inline
   validation, and accessible loading, error, and success states.
 - Fixed clean CI typechecks by generating Next.js route types before running TypeScript.
+- Added a server-side logout action that signs out through Better-Auth and redirects to
+  the login page.
+- Added a temporary sign-out button to the post-login state for validating logout behavior.
+- Added Next.js 16 proxy-based session protection for authenticated dashboard routes.

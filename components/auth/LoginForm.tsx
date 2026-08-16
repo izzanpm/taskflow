@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +76,9 @@ export function LoginForm() {
           Your session is ready. You can continue when your workspace is
           available.
         </p>
+        <div className="mt-6 border-t border-[#E2E8F0] pt-4">
+          <LogoutButton />
+        </div>
       </div>
     );
   }
