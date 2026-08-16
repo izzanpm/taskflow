@@ -211,24 +211,18 @@ in `TASK.md` under Backlog / Stretch Goals — not implemented for MVP.
 --
 
 ## Use Case Diagram
-_To be completed as part of `TASK.md` Phase 0, before Phase 1 implementation begins._
-_Write in Mermaid `usecase`-style or flowchart syntax covering the Admin and Member
-actors and the core use cases from `PRD.md` §7–8._
+The Phase 0 use case diagram is documented in `docs/phase-0-diagrams.md`.
 
 --
 
 ## Process Flowcharts
-_To be completed as part of `TASK.md` Phase 0._
-_Cover at minimum: authentication flow, invite & accept flow, task creation flow,
-drag-and-drop reorder flow. Write each as a separate Mermaid `flowchart` block._
+The Phase 0 process flowcharts are documented in `docs/phase-0-diagrams.md`.
 
 --
 
 ## Class Diagram
-_To be completed as part of `TASK.md` Phase 0._
-_Should mirror the Prisma schema in `PRD.md` §10 but expressed as a UML-style class
-diagram (Mermaid `classDiagram` syntax) — useful for visualizing relationships at a
-glance before writing migration code.
+The Phase 0 class diagram is documented in `docs/phase-0-diagrams.md` and mirrors the
+Prisma schema in `PRD.md` §10.
 
 --
 
