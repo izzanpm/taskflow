@@ -61,7 +61,7 @@ export function LoginForm({ inviteToken }: { inviteToken?: string }) {
         return;
       }
 
-      setIsComplete(true);
+      router.replace("/");
     } catch {
       setErrorMessage("We could not sign you in. Please try again.");
     } finally {

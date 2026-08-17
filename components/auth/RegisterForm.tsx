@@ -78,7 +78,7 @@ export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
         return;
       }
 
-      setIsComplete(true);
+      router.replace("/");
     } catch {
       setErrorMessage("We could not create your account. Please try again.");
     } finally {

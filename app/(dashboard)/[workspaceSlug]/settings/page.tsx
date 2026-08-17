@@ -83,9 +83,12 @@ export default async function WorkspaceSettingsPage(
             <span aria-hidden="true" className="text-[#CBD5E1]">
               /
             </span>
-            <span className="max-w-40 truncate text-sm text-[#64748B]">
+            <Link
+              className="max-w-40 truncate text-sm text-[#64748B] transition-colors hover:text-[#004BB0] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30"
+              href={`/${workspace.slug}/boards`}
+            >
               {workspace.name}
-            </span>
+            </Link>
           </div>
           <div className="flex items-center gap-3">
             <Link

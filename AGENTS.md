@@ -101,10 +101,12 @@ Use this folder structure:
 /app
   /(auth)/login
   /(auth)/register
+  /(dashboard)/[workspaceSlug]/boards
   /(dashboard)/[workspaceSlug]/boards/[boardId]
   /(dashboard)/[workspaceSlug]/settings
   /api/auth/[...all]
   /api/workspaces
+  /api/workspaces/[workspaceId]/boards
   /api/boards
   /api/tasks
   /api/tasks/[id]/comments

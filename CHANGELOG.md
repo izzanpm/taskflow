@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added board list and board creation to the Phase 4 task scope.
+- Completed the Phase 4 board list flow with member access, admin-only board
+  creation, empty/loading/error states, and redirects from workspace setup and
+  invite acceptance.
 - Added Phase 0 use case, process flow, class, and UI navigation diagrams under
   `docs/`.
 - Verified the Next.js App Router and TypeScript foundation with lint, typecheck, and
@@ -44,3 +48,11 @@
   states.
 - Confirmed the existing `Invite` model migration is present in the first Prisma
   migration; transactional email delivery remains scoped to Phase 5.
+- Completed Phase 4 Kanban core: board detail rendering, column CRUD and
+  fractional-index reorder, task CRUD with assignment/due-date/priority editing,
+  dnd-kit column/task drag-and-drop, and TanStack Query optimistic updates with
+  rollback on failed reorder mutations.
+- Added the board/task route handlers and verified the authenticated flow against
+  PostgreSQL, including cleanup of temporary smoke-test data.
+- Added `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`, and
+  `@tanstack/react-query` for the Phase 4 interaction and server-state contracts.

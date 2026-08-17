@@ -34,7 +34,7 @@ export function InviteAcceptanceForm({
         return;
       }
 
-      router.push(`/${workspaceSlug}/settings`);
+      router.push(`/${workspaceSlug}/boards`);
     } catch {
       setErrorMessage("We could not accept this invite. Please try again.");
     } finally {
