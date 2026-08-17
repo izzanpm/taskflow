@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,8 @@ import { authClient } from "@/lib/auth-client";
 const inputClassName =
   "h-12 rounded-xl border-[#E2E8F0] bg-white px-4 text-base";
 
-export function RegisterForm() {
+export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isComplete, setIsComplete] = useState(false);
@@ -71,6 +73,11 @@ export function RegisterForm() {
         return;
       }
 
+      if (inviteToken) {
+        router.replace(`/invite/${encodeURIComponent(inviteToken)}`);
+        return;
+      }
+
       setIsComplete(true);
     } catch {
       setErrorMessage("We could not create your account. Please try again.");
@@ -122,7 +129,11 @@ export function RegisterForm() {
         Already have an account?{" "}
         <Link
           className="font-semibold text-[#004BB0] underline-offset-4 hover:underline"
-          href="/login"
+          href={
+            inviteToken
+              ? `/login?invite=${encodeURIComponent(inviteToken)}`
+              : "/login"
+          }
         >
           Sign in
         </Link>

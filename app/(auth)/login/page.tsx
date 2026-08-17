@@ -5,7 +5,11 @@ export const metadata = {
   description: "Sign in to your TaskFlow account.",
 };
 
-export default function LoginPage() {
+export default async function LoginPage(props: PageProps<"/login">) {
+  const searchParams = await props.searchParams;
+  const invite = searchParams.invite;
+  const inviteToken = typeof invite === "string" ? invite : undefined;
+
   return (
     <main className="min-h-svh bg-[#F9F8F6] px-6 py-10 text-[#0F172A] sm:px-8">
       <div className="mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[30rem] items-center">
@@ -26,7 +30,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <LoginForm />
+          <LoginForm inviteToken={inviteToken} />
         </section>
       </div>
     </main>

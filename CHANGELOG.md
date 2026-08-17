@@ -36,3 +36,11 @@
   accessible loading, error, and success states.
 - Added the session-protected `PATCH /api/profile` mutation with Zod validation for
   updating a user's name and avatar URL.
+- Completed Phase 3 workspace and role management: workspace creation with unique
+  slugs, admin authorization, invite links with rate limiting, invite acceptance,
+  member role changes, member removal, and workspace deletion.
+- Added workspace settings, create-workspace, and invite acceptance screens with
+  responsive TaskFlow styling and accessible loading, error, empty, and confirmation
+  states.
+- Confirmed the existing `Invite` model migration is present in the first Prisma
+  migration; transactional email delivery remains scoped to Phase 5.

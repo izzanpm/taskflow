@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ import { authClient } from "@/lib/auth-client";
 const inputClassName =
   "h-12 rounded-xl border-[#E2E8F0] bg-white px-4 text-base";
 
-export function LoginForm() {
+export function LoginForm({ inviteToken }: { inviteToken?: string }) {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isComplete, setIsComplete] = useState(false);
@@ -51,6 +53,11 @@ export function LoginForm() {
 
       if (error) {
         setErrorMessage(error.message ?? "We could not sign you in.");
+        return;
+      }
+
+      if (inviteToken) {
+        router.replace(`/invite/${encodeURIComponent(inviteToken)}`);
         return;
       }
 
@@ -132,7 +139,11 @@ export function LoginForm() {
         Don&apos;t have an account?{" "}
         <Link
           className="font-semibold text-[#004BB0] underline-offset-4 hover:underline"
-          href="/register"
+          href={
+            inviteToken
+              ? `/register?invite=${encodeURIComponent(inviteToken)}`
+              : "/register"
+          }
         >
           Create account
         </Link>
