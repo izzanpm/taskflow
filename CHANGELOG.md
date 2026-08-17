@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Completed Phase 4.5 Workspace Hub: protected workspace listing, host/admin and
+  current-role context, workspace selection, create-workspace navigation, loading/
+  empty/error states, and post-auth redirect updates.
+- Documented the new post-login Workspace Hub flow, workspace selection, role/host
+  context, and the Phase 4.5 implementation scope before collaboration work.
 - Added board list and board creation to the Phase 4 task scope.
 - Completed the Phase 4 board list flow with member access, admin-only board
   creation, empty/loading/error states, and redirects from workspace setup and

@@ -6,8 +6,33 @@ import { db } from "@/lib/db";
 import { createWorkspaceSchema } from "@/lib/validation";
 import {
   generateUniqueWorkspaceSlug,
+  getUserWorkspaces,
   isUniqueConstraintError,
 } from "@/lib/workspaces";
+
+export async function GET(request: Request) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session) {
+    return NextResponse.json(
+      { error: "You need to be signed in to view your workspaces." },
+      { status: 401 },
+    );
+  }
+
+  try {
+    return NextResponse.json({
+      data: await getUserWorkspaces(session.user.id),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "We could not load your workspaces. Please try again." },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({

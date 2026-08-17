@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/workspaces/new",
+    "/workspaces/:path*",
     "/:workspaceSlug/boards/:path*",
     "/:workspaceSlug/settings/:path*",
     "/settings/profile",

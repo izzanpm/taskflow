@@ -48,7 +48,7 @@ export function CreateWorkspaceForm() {
         return;
       }
 
-      router.push(`/${result.data.slug}/boards`);
+      router.push("/workspaces");
     } catch {
       setErrorMessage("We could not create your workspace. Please try again.");
     } finally {

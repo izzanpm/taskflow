@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/app/generated/prisma/client";
 
 import { db } from "@/lib/db";
+import type { WorkspaceSummary } from "@/types/workspace";
 
 type WorkspaceClient = Pick<PrismaClient, "workspace">;
 
@@ -45,4 +46,45 @@ export function isUniqueConstraintError(error: unknown) {
     "code" in error &&
     error.code === "P2002"
   );
+}
+
+export async function getUserWorkspaces(
+  userId: string,
+): Promise<WorkspaceSummary[]> {
+  const workspaces = await db.workspace.findMany({
+    where: { members: { some: { userId } } },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      members: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          userId: true,
+          role: true,
+          user: { select: { name: true, email: true } },
+        },
+      },
+    },
+  });
+
+  return workspaces.flatMap((workspace) => {
+    const membership = workspace.members.find(
+      (member) => member.userId === userId,
+    );
+    if (!membership) return [];
+
+    const host = workspace.members.find((member) => member.role === "ADMIN");
+
+    return [
+      {
+        id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        role: membership.role,
+        host: host?.user ?? null,
+      },
+    ];
+  });
 }

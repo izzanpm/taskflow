@@ -17,3 +17,14 @@ export type WorkspaceInviteSummary = {
   role: WorkspaceRole;
   expiresAt: string;
 };
+
+export type WorkspaceSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  role: WorkspaceRole;
+  host: {
+    name: string;
+    email: string;
+  } | null;
+};

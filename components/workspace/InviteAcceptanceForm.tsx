@@ -8,13 +8,9 @@ import { Button } from "@/components/ui/button";
 
 type InviteAcceptanceFormProps = {
   token: string;
-  workspaceSlug: string;
 };
 
-export function InviteAcceptanceForm({
-  token,
-  workspaceSlug,
-}: InviteAcceptanceFormProps) {
+export function InviteAcceptanceForm({ token }: InviteAcceptanceFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -34,7 +30,7 @@ export function InviteAcceptanceForm({
         return;
       }
 
-      router.push(`/${workspaceSlug}/boards`);
+      router.push("/workspaces");
     } catch {
       setErrorMessage("We could not accept this invite. Please try again.");
     } finally {

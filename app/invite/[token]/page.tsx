@@ -81,10 +81,7 @@ export default async function InvitePage(props: PageProps<"/invite/[token]">) {
                           {session.user.email}
                         </strong>
                       </p>
-                      <InviteAcceptanceForm
-                        token={token}
-                        workspaceSlug={invite.workspace.slug}
-                      />
+                      <InviteAcceptanceForm token={token} />
                     </div>
                   ) : (
                     <InviteState

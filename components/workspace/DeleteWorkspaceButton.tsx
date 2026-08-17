@@ -31,7 +31,7 @@ export function DeleteWorkspaceButton({
         return;
       }
 
-      router.push("/workspaces/new");
+      router.push("/workspaces");
     } catch {
       setErrorMessage("We could not delete this workspace. Please try again.");
     } finally {

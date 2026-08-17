@@ -58,7 +58,7 @@ export default async function WorkspaceSettingsPage(
     (member) => member.userId === session.user.id,
   );
 
-  if (!currentMember) redirect("/workspaces/new");
+  if (!currentMember) redirect("/workspaces");
 
   const members: WorkspaceMemberSummary[] = workspace.members;
   const pendingInvites: WorkspaceInviteSummary[] = workspace.invites.map(
@@ -72,7 +72,7 @@ export default async function WorkspaceSettingsPage(
           <div className="flex items-center gap-4">
             <Link
               className="flex items-center gap-2 text-sm font-semibold tracking-[-0.02em] text-[#004BB0] transition-colors hover:text-[#033476] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30"
-              href={`/${workspace.slug}/settings`}
+              href="/workspaces"
             >
               <span
                 aria-hidden="true"

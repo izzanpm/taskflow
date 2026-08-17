@@ -37,7 +37,7 @@ export default async function BoardListPage(
   if (!workspace) notFound();
 
   const currentMember = workspace.members[0];
-  if (!currentMember) redirect("/workspaces/new");
+  if (!currentMember) redirect("/workspaces");
 
   const boards = await getWorkspaceBoards(workspace.id);
 
@@ -48,7 +48,7 @@ export default async function BoardListPage(
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Link
               className="flex shrink-0 items-center gap-2 text-sm font-semibold tracking-[-0.02em] text-[#004BB0] transition-colors hover:text-[#033476] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30"
-              href={`/${workspace.slug}/boards`}
+              href="/workspaces"
             >
               <span
                 aria-hidden="true"

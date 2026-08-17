@@ -101,6 +101,7 @@ Use this folder structure:
 /app
   /(auth)/login
   /(auth)/register
+  /(dashboard)/workspaces
   /(dashboard)/[workspaceSlug]/boards
   /(dashboard)/[workspaceSlug]/boards/[boardId]
   /(dashboard)/[workspaceSlug]/settings
@@ -161,6 +162,7 @@ are server-only unless explicitly marked otherwise.
 
 | Method | Route                              | Purpose                        |
 |--------|-------------------------------------|---------------------------------|
+| GET    | /api/workspaces                    | List current user's workspaces |
 | POST   | /api/workspaces                    | Create workspace                |
 | POST   | /api/invites                       | Send invite email               |
 | POST   | /api/invites/[token]/accept         | Accept invite                   |
@@ -194,8 +196,8 @@ membership check.
 - Basic rate limiting on invite endpoint to prevent abuse.
 - Optimistic UI updates on drag-and-drop; rollback on server error.
 
-Future/roadmap items (real-time sync, billing, multi-workspace switcher) are tracked
-in `TASK.md` under Backlog / Stretch Goals — not implemented for MVP.
+Future/roadmap items (real-time sync and billing) are tracked in `TASK.md` under
+Backlog / Stretch Goals — not implemented for MVP.
 
 --
 
