@@ -28,3 +28,19 @@
 - Added the English centered login page with Better-Auth sign-in handling, inline
   validation, and accessible loading, error, and success states.
 - Fixed clean CI typechecks by generating Next.js route types before running TypeScript.
+- Added a server-side logout action that signs out through Better-Auth and redirects to
+  the login page.
+- Added a temporary sign-out button to the post-login state for validating logout behavior.
+- Added Next.js 16 proxy-based session protection for authenticated dashboard routes.
+- Added the authenticated profile settings page with name and avatar preview, plus
+  accessible loading, error, and success states.
+- Added the session-protected `PATCH /api/profile` mutation with Zod validation for
+  updating a user's name and avatar URL.
+- Completed Phase 3 workspace and role management: workspace creation with unique
+  slugs, admin authorization, invite links with rate limiting, invite acceptance,
+  member role changes, member removal, and workspace deletion.
+- Added workspace settings, create-workspace, and invite acceptance screens with
+  responsive TaskFlow styling and accessible loading, error, empty, and confirmation
+  states.
+- Confirmed the existing `Invite` model migration is present in the first Prisma
+  migration; transactional email delivery remains scoped to Phase 5.

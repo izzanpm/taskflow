@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +13,8 @@ import { authClient } from "@/lib/auth-client";
 const inputClassName =
   "h-12 rounded-xl border-[#E2E8F0] bg-white px-4 text-base";
 
-export function LoginForm() {
+export function LoginForm({ inviteToken }: { inviteToken?: string }) {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isComplete, setIsComplete] = useState(false);
@@ -53,6 +56,11 @@ export function LoginForm() {
         return;
       }
 
+      if (inviteToken) {
+        router.replace(`/invite/${encodeURIComponent(inviteToken)}`);
+        return;
+      }
+
       setIsComplete(true);
     } catch {
       setErrorMessage("We could not sign you in. Please try again.");
@@ -75,6 +83,9 @@ export function LoginForm() {
           Your session is ready. You can continue when your workspace is
           available.
         </p>
+        <div className="mt-6 border-t border-[#E2E8F0] pt-4">
+          <LogoutButton />
+        </div>
       </div>
     );
   }
@@ -128,7 +139,11 @@ export function LoginForm() {
         Don&apos;t have an account?{" "}
         <Link
           className="font-semibold text-[#004BB0] underline-offset-4 hover:underline"
-          href="/register"
+          href={
+            inviteToken
+              ? `/register?invite=${encodeURIComponent(inviteToken)}`
+              : "/register"
+          }
         >
           Create account
         </Link>
