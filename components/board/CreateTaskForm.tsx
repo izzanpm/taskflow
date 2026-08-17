@@ -13,7 +13,7 @@ type CreateTaskFormProps = {
     columnId: string;
     title: string;
     priority: TaskPriority;
-  }) => Promise<void>;
+  }) => Promise<boolean>;
 };
 
 export function CreateTaskForm({ columnId, onCreate }: CreateTaskFormProps) {
@@ -28,7 +28,12 @@ export function CreateTaskForm({ columnId, onCreate }: CreateTaskFormProps) {
 
     setIsSubmitting(true);
     try {
-      await onCreate({ columnId, title: title.trim(), priority });
+      const created = await onCreate({
+        columnId,
+        title: title.trim(),
+        priority,
+      });
+      if (!created) return;
       setTitle("");
       setPriority("MEDIUM");
       setIsOpen(false);

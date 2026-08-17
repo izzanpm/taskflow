@@ -23,13 +23,13 @@ import type {
 type BoardColumnProps = {
   column: BoardColumnData;
   members: BoardMember[];
-  onRename: (columnId: string, name: string) => Promise<void>;
-  onDelete: (columnId: string) => Promise<void>;
+  onRename: (columnId: string, name: string) => Promise<boolean>;
+  onDelete: (columnId: string) => Promise<boolean>;
   onCreateTask: (input: {
     columnId: string;
     title: string;
     priority: TaskPriority;
-  }) => Promise<void>;
+  }) => Promise<boolean>;
   onEditTask: (
     taskId: string,
     input: {
@@ -39,9 +39,11 @@ type BoardColumnProps = {
       dueDate: string | null;
       priority: TaskPriority;
     },
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   onOpenTask: (task: BoardColumnData["tasks"][number]) => void;
   onDeleteTask: (taskId: string) => Promise<void>;
+  hasActiveFilters: boolean;
+  totalTaskCount: number;
 };
 
 export function BoardColumn({
@@ -53,6 +55,8 @@ export function BoardColumn({
   onOpenTask,
   onEditTask,
   onDeleteTask,
+  hasActiveFilters,
+  totalTaskCount,
 }: BoardColumnProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [name, setName] = useState(column.name);
@@ -66,6 +70,7 @@ export function BoardColumn({
     transition,
     isDragging,
   } = useSortable({
+    disabled: hasActiveFilters,
     id: column.id,
     data: { type: "column", columnId: column.id },
   });
@@ -74,8 +79,8 @@ export function BoardColumn({
     event.preventDefault();
     if (!name.trim()) return;
 
-    await onRename(column.id, name.trim());
-    setIsRenaming(false);
+    const renamed = await onRename(column.id, name.trim());
+    if (renamed) setIsRenaming(false);
   }
 
   async function handleDelete() {
@@ -85,7 +90,8 @@ export function BoardColumn({
 
   return (
     <section
-      className={`flex h-fit min-h-[28rem] w-[min(20rem,calc(100vw-3rem))] shrink-0 flex-col rounded-xl border border-[#E2E8F0] bg-[#F1F5F9]/75 p-3 ${isDragging ? "opacity-50" : ""}`}
+      aria-label={`${column.name} column`}
+      className={`flex h-fit min-h-[28rem] w-[min(20rem,calc(100vw-2rem))] shrink-0 touch-pan-y flex-col rounded-xl border border-[#E2E8F0] bg-[#F1F5F9]/75 p-3 sm:w-80 ${isDragging ? "opacity-50" : ""}`}
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
@@ -140,7 +146,9 @@ export function BoardColumn({
                 {column.name}
               </h2>
               <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#64748B]">
-                {column.tasks.length}
+                {hasActiveFilters && totalTaskCount !== column.tasks.length
+                  ? `${column.tasks.length}/${totalTaskCount}`
+                  : column.tasks.length}
               </span>
             </div>
             <div className="relative">
@@ -201,8 +209,9 @@ export function BoardColumn({
                     members={members}
                     onCancel={() => setEditingTaskId(null)}
                     onSave={async (taskId, input) => {
-                      await onEditTask(taskId, input);
-                      setEditingTaskId(null);
+                      const saved = await onEditTask(taskId, input);
+                      if (saved) setEditingTaskId(null);
+                      return saved;
                     }}
                     task={task}
                   />
@@ -220,9 +229,20 @@ export function BoardColumn({
           ))}
           {column.tasks.length === 0 ? (
             <div className="flex flex-1 items-center justify-center border border-dashed border-[#CBD5E1] px-4 py-8 text-center">
-              <p className="text-xs leading-5 text-[#94A3B8]">
-                Drop a task here or create the first one.
-              </p>
+              {hasActiveFilters && totalTaskCount > 0 ? (
+                <div>
+                  <p className="text-xs font-medium text-[#64748B]">
+                    No matching tasks.
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[#94A3B8]">
+                    Clear a filter to see more work.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs leading-5 text-[#94A3B8]">
+                  Drop a task here or create the first one.
+                </p>
+              )}
             </div>
           ) : null}
         </div>

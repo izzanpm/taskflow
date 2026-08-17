@@ -19,7 +19,7 @@ type EditTaskFormProps = {
       dueDate: string | null;
       priority: TaskPriority;
     },
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   onCancel: () => void;
 };
 

@@ -1,12 +1,13 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import {
   closestCorners,
   DndContext,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -19,12 +20,20 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ListFilter, Plus, RefreshCw, Search, X } from "lucide-react";
 
 import { BoardColumn } from "@/components/board/BoardColumn";
 import { TaskDetailModal } from "@/components/board/TaskDetailModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Toast, type ToastVariant } from "@/components/ui/toast";
+import {
+  countBoardTasks,
+  emptyTaskFilters,
+  filterBoardColumns,
+  hasActiveTaskFilters,
+  type TaskFilterState,
+} from "@/lib/task-filters";
 import type {
   BoardColumn as BoardColumnData,
   BoardTask,
@@ -50,6 +59,11 @@ type TaskReorderInput = {
   previousTaskId: string | null;
   nextTaskId: string | null;
   optimisticColumns: BoardColumnData[];
+};
+
+type BoardToast = {
+  message: string;
+  variant: ToastVariant;
 };
 
 async function requestApi<T>(url: string, init?: RequestInit) {
@@ -165,18 +179,39 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
   const [activeType, setActiveType] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [toast, setToast] = useState<BoardToast | null>(null);
+  const [filters, setFilters] = useState<TaskFilterState>(emptyTaskFilters);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
 
-  const { data: board = initialBoard } = useQuery<BoardView>({
+  const {
+    data: board = initialBoard,
+    error: boardQueryError,
+    isError: isBoardError,
+    isFetching: isBoardFetching,
+    refetch: refetchBoard,
+  } = useQuery<BoardView>({
     queryKey,
     queryFn: () => requestApi<BoardView>(`/api/boards/${initialBoard.id}`),
     initialData: initialBoard,
   });
+
+  function showMutationError(error: Error) {
+    setErrorMessage(error.message);
+    setToast({ message: error.message, variant: "error" });
+  }
+
+  function showMutationSuccess(message: string) {
+    setErrorMessage("");
+    setToast({ message, variant: "success" });
+  }
 
   function updateBoard(updater: (current: BoardView) => BoardView) {
     queryClient.setQueryData<BoardView>(queryKey, (current) =>
@@ -200,8 +235,9 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         columns: [...current.columns, { ...column, tasks: [] }],
       }));
       setColumnName("");
+      showMutationSuccess("Column added.");
     },
-    onError: (error) => setErrorMessage(error.message),
+    onError: showMutationError,
   });
 
   const renameColumnMutation = useMutation({
@@ -211,14 +247,16 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       }),
-    onSuccess: (column) =>
+    onSuccess: (column) => {
       updateBoard((current) => ({
         ...current,
         columns: current.columns.map((item) =>
           item.id === column.id ? { ...item, name: column.name } : item,
         ),
-      })),
-    onError: (error) => setErrorMessage(error.message),
+      }));
+      showMutationSuccess("Column renamed.");
+    },
+    onError: showMutationError,
   });
 
   const deleteColumnMutation = useMutation({
@@ -226,12 +264,14 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
       requestApi<{ id: string }>(`/api/columns/${columnId}`, {
         method: "DELETE",
       }),
-    onSuccess: ({ id }) =>
+    onSuccess: ({ id }) => {
       updateBoard((current) => ({
         ...current,
         columns: current.columns.filter((column) => column.id !== id),
-      })),
-    onError: (error) => setErrorMessage(error.message),
+      }));
+      showMutationSuccess("Column deleted.");
+    },
+    onError: showMutationError,
   });
 
   const createTaskMutation = useMutation({
@@ -245,7 +285,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       }),
-    onSuccess: (task, input) =>
+    onSuccess: (task, input) => {
       updateBoard((current) => ({
         ...current,
         columns: current.columns.map((column) =>
@@ -253,8 +293,10 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
             ? { ...column, tasks: [...column.tasks, task] }
             : column,
         ),
-      })),
-    onError: (error) => setErrorMessage(error.message),
+      }));
+      showMutationSuccess("Task added.");
+    },
+    onError: showMutationError,
   });
 
   const editTaskMutation = useMutation({
@@ -276,15 +318,17 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       }),
-    onSuccess: (task) =>
+    onSuccess: (task) => {
       updateBoard((current) => ({
         ...current,
         columns: updateTask(current.columns, task.id, (currentTask) => ({
           ...currentTask,
           ...task,
         })),
-      })),
-    onError: (error) => setErrorMessage(error.message),
+      }));
+      showMutationSuccess("Task updated.");
+    },
+    onError: showMutationError,
   });
 
   const deleteTaskMutation = useMutation({
@@ -301,8 +345,9 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         })),
       }));
       if (id === selectedTaskId) setSelectedTaskId(null);
+      showMutationSuccess("Task deleted.");
     },
-    onError: (error) => setErrorMessage(error.message),
+    onError: showMutationError,
   });
 
   const reorderColumnMutation = useMutation({
@@ -328,7 +373,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
     onError: (error, _input, context) => {
       if (context?.previous)
         queryClient.setQueryData(queryKey, context.previous);
-      setErrorMessage(error.message);
+      showMutationError(error);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
@@ -356,7 +401,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
     onError: (error, _input, context) => {
       if (context?.previous)
         queryClient.setQueryData(queryKey, context.previous);
-      setErrorMessage(error.message);
+      showMutationError(error);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
@@ -431,19 +476,24 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
     setActiveType(null);
   }
 
-  async function handleRenameColumn(columnId: string, name: string) {
+  async function handleRenameColumn(
+    columnId: string,
+    name: string,
+  ): Promise<boolean> {
     try {
       await renameColumnMutation.mutateAsync({ columnId, name });
+      return true;
     } catch {
-      // The mutation already exposes the server error in the board alert.
+      return false;
     }
   }
 
-  async function handleDeleteColumn(columnId: string) {
+  async function handleDeleteColumn(columnId: string): Promise<boolean> {
     try {
       await deleteColumnMutation.mutateAsync(columnId);
+      return true;
     } catch {
-      // The mutation already exposes the server error in the board alert.
+      return false;
     }
   }
 
@@ -451,11 +501,12 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
     columnId: string;
     title: string;
     priority: TaskPriority;
-  }) {
+  }): Promise<boolean> {
     try {
       await createTaskMutation.mutateAsync(input);
+      return true;
     } catch {
-      // The mutation already exposes the server error in the board alert.
+      return false;
     }
   }
 
@@ -468,11 +519,12 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
       dueDate: string | null;
       priority: TaskPriority;
     },
-  ) {
+  ): Promise<boolean> {
     try {
       await editTaskMutation.mutateAsync({ taskId, input });
+      return true;
     } catch {
-      // The mutation already exposes the server error in the board alert.
+      return false;
     }
   }
 
@@ -505,17 +557,41 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         .flatMap((column) => column.tasks)
         .find((task) => task.id === selectedTaskId)
     : null;
+  const filteredColumns = useMemo(
+    () => filterBoardColumns(board.columns, filters),
+    [board.columns, filters],
+  );
+  const totalTaskCount = countBoardTasks(board.columns);
+  const visibleTaskCount = countBoardTasks(filteredColumns);
+  const hasActiveFilters = hasActiveTaskFilters(filters);
+  const boardErrorMessage = isBoardError
+    ? boardQueryError instanceof Error
+      ? boardQueryError.message
+      : "We could not refresh this board."
+    : "";
 
   return (
     <div>
-      {errorMessage ? (
-        <p
+      {errorMessage || boardErrorMessage ? (
+        <div
           aria-live="assertive"
-          className="mb-5 rounded-lg border border-[#B91C1C]/20 bg-[#FEF2F2] px-3 py-2.5 text-sm leading-5 text-[#991B1B]"
+          className="mb-5 flex items-start gap-3 rounded-lg border border-[#B91C1C]/20 bg-[#FEF2F2] px-3 py-2.5 text-sm leading-5 text-[#991B1B]"
           role="alert"
         >
-          {errorMessage}
-        </p>
+          <p className="min-w-0 flex-1">{boardErrorMessage || errorMessage}</p>
+          {boardErrorMessage ? (
+            <Button
+              className="-my-1 -mr-1 shrink-0 gap-1 px-2 text-xs text-[#991B1B] hover:bg-[#FEE2E2] hover:text-[#7F1D1D]"
+              onClick={() => void refetchBoard()}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <RefreshCw aria-hidden="true" />
+              Retry
+            </Button>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="flex flex-col gap-4 border-b border-[#E2E8F0] pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -550,29 +626,175 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         </form>
       </div>
 
+      {isBoardFetching && !isBoardError ? (
+        <p className="mt-3 text-xs text-[#64748B]" role="status">
+          Refreshing board...
+        </p>
+      ) : null}
+
+      <section
+        aria-label="Task search and filters"
+        className="mt-5 border border-[#E2E8F0] bg-white p-3 sm:p-4"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#94A3B8]"
+            />
+            <Input
+              aria-label="Search tasks"
+              className="h-10 border-[#CBD5E1] pl-9 pr-9 text-sm"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                }))
+              }
+              placeholder="Search tasks"
+              type="search"
+              value={filters.search}
+            />
+            {filters.search ? (
+              <Button
+                aria-label="Clear task search"
+                className="absolute right-1 top-1/2 size-8 -translate-y-1/2 text-[#64748B] hover:bg-[#F1F5F9]"
+                onClick={() =>
+                  setFilters((current) => ({ ...current, search: "" }))
+                }
+                size="icon-sm"
+                title="Clear task search"
+                type="button"
+                variant="ghost"
+              >
+                <X aria-hidden="true" />
+              </Button>
+            ) : null}
+          </div>
+          <div className="flex items-center justify-between gap-3 sm:justify-end">
+            <p className="text-xs text-[#64748B]">
+              {hasActiveFilters
+                ? `${visibleTaskCount} of ${totalTaskCount} tasks shown`
+                : `${totalTaskCount} ${totalTaskCount === 1 ? "task" : "tasks"}`}
+            </p>
+            {hasActiveFilters ? (
+              <Button
+                className="gap-1 px-2 text-xs text-[#004BB0]"
+                onClick={() => setFilters(emptyTaskFilters)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <X aria-hidden="true" />
+                Clear filters
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-[#64748B]">
+            <span className="sr-only">Filter by assignee</span>
+            <select
+              aria-label="Filter by assignee"
+              className="h-9 min-w-0 w-full rounded-lg border border-[#CBD5E1] bg-white px-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#004BB0] focus:ring-3 focus:ring-[#004BB0]/20"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  assigneeId: event.target.value,
+                }))
+              }
+              value={filters.assigneeId}
+            >
+              <option value="ALL">All assignees</option>
+              <option value="UNASSIGNED">Unassigned</option>
+              {board.members.map((member) => (
+                <option key={member.userId} value={member.userId}>
+                  {member.user.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-[#64748B]">
+            <span className="sr-only">Filter by column</span>
+            <select
+              aria-label="Filter by column"
+              className="h-9 min-w-0 w-full rounded-lg border border-[#CBD5E1] bg-white px-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#004BB0] focus:ring-3 focus:ring-[#004BB0]/20"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  columnId: event.target.value,
+                }))
+              }
+              value={filters.columnId}
+            >
+              <option value="ALL">All columns</option>
+              {board.columns.map((column) => (
+                <option key={column.id} value={column.id}>
+                  {column.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-[#64748B]">
+            <span className="sr-only">Filter by due date</span>
+            <select
+              aria-label="Filter by due date"
+              className="h-9 min-w-0 w-full rounded-lg border border-[#CBD5E1] bg-white px-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#004BB0] focus:ring-3 focus:ring-[#004BB0]/20"
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  dueDate: event.target.value as TaskFilterState["dueDate"],
+                }))
+              }
+              value={filters.dueDate}
+            >
+              <option value="ALL">Any due date</option>
+              <option value="OVERDUE">Overdue</option>
+              <option value="TODAY">Due today</option>
+              <option value="NEXT_7_DAYS">Next 7 days</option>
+              <option value="NO_DATE">No due date</option>
+            </select>
+          </label>
+        </div>
+        {hasActiveFilters ? (
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-[#64748B]">
+            <ListFilter
+              aria-hidden="true"
+              className="size-3.5 text-[#004BB0]"
+            />
+            Clear filters to reorder columns or tasks.
+          </p>
+        ) : null}
+      </section>
+
       <DndContext
         collisionDetection={closestCorners}
         onDragCancel={handleDragCancel}
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}
-        sensors={sensors}
+        sensors={hasActiveFilters ? [] : sensors}
       >
         <SortableContext
           items={board.columns.map((column) => column.id)}
           strategy={horizontalListSortingStrategy}
         >
-          <div className="mt-6 flex snap-x gap-4 overflow-x-auto pb-6">
-            {board.columns.map((column) => (
+          <div className="mt-6 flex snap-x gap-4 overflow-x-auto pb-6 [scrollbar-gutter:stable]">
+            {filteredColumns.map((column) => (
               <BoardColumn
                 column={column}
                 key={column.id}
                 members={board.members}
+                hasActiveFilters={hasActiveFilters}
                 onCreateTask={handleCreateTask}
                 onDelete={handleDeleteColumn}
                 onDeleteTask={handleDeleteTask}
                 onEditTask={handleEditTask}
                 onOpenTask={(task) => setSelectedTaskId(task.id)}
                 onRename={handleRenameColumn}
+                totalTaskCount={
+                  board.columns.find((item) => item.id === column.id)?.tasks
+                    .length ?? 0
+                }
               />
             ))}
             {board.columns.length === 0 ? (
@@ -612,6 +834,12 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
           taskId={selectedTask.id}
         />
       ) : null}
+
+      <Toast
+        message={toast?.message ?? ""}
+        onDismiss={() => setToast(null)}
+        variant={toast?.variant}
+      />
     </div>
   );
 }

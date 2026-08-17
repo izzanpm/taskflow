@@ -13,6 +13,9 @@
   collaboration integrations.
 - Added AWS SDK, Resend, and React Email dependencies and wired them into the R2
   storage and workspace invite email helpers.
+- Completed Phase 6 board UX polish: board/task loading and error recovery states,
+  empty-state messaging, mutation toasts, mobile touch handling, task search, and
+  assignee, column, and due-date filters.
 - Completed Phase 4.5 Workspace Hub: protected workspace listing, host/admin and
   current-role context, workspace selection, create-workspace navigation, loading/
   empty/error states, and post-auth redirect updates.

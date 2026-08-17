@@ -53,7 +53,7 @@ export function TaskCard({
 
   return (
     <article
-      className={`group rounded-lg border border-[#E2E8F0] bg-white p-4 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#CBD5E1] hover:shadow-[0_8px_24px_rgba(15,23,42,0.07)] ${isDragging ? "opacity-40" : ""}`}
+      className={`group touch-pan-y rounded-lg border border-[#E2E8F0] bg-white p-4 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#CBD5E1] hover:shadow-[0_8px_24px_rgba(15,23,42,0.07)] ${isDragging ? "opacity-40" : ""}`}
       ref={setNodeRef}
       onClick={() => onOpen(task)}
       style={{
@@ -67,7 +67,7 @@ export function TaskCard({
         <h3 className="min-w-0 text-sm font-semibold leading-5 text-[#0F172A]">
           {task.title}
         </h3>
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <Button
             aria-label={`Edit ${task.title}`}
             className="size-7 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#004BB0]"

@@ -7,12 +7,21 @@ import {
   useRef,
   useState,
 } from "react";
-import { MessageCircle, Paperclip, Trash2, Upload, X } from "lucide-react";
+import {
+  MessageCircle,
+  Paperclip,
+  RefreshCw,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { EditTaskForm } from "@/components/board/EditTaskForm";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Toast, type ToastVariant } from "@/components/ui/toast";
 import type {
   BoardMember,
   BoardTask,
@@ -103,7 +112,7 @@ export function TaskDetailModal({
       dueDate: string | null;
       priority: TaskPriority;
     },
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -111,12 +120,26 @@ export function TaskDetailModal({
   const [attachmentError, setAttachmentError] = useState("");
   const [attachmentMessage, setAttachmentMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    variant: ToastVariant;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryKey = ["task-detail", taskId] as const;
-  const { data, isLoading, isError } = useQuery<TaskDetail>({
+  const {
+    data,
+    error: taskQueryError,
+    isError,
+    isLoading,
+    refetch: refetchTask,
+  } = useQuery<TaskDetail>({
     queryKey,
     queryFn: () => requestApi<TaskDetail>(`/api/tasks/${taskId}`),
   });
+
+  function showError(message: string) {
+    setToast({ message, variant: "error" });
+  }
 
   const commentMutation = useMutation({
     mutationFn: (commentBody: string) =>
@@ -128,7 +151,9 @@ export function TaskDetailModal({
     onSuccess: () => {
       setBody("");
       void queryClient.invalidateQueries({ queryKey });
+      setToast({ message: "Comment added.", variant: "success" });
     },
+    onError: (error) => showError(error.message),
   });
 
   const uploadMutation = useMutation({
@@ -168,8 +193,12 @@ export function TaskDetailModal({
     onSuccess: (attachment) => {
       setAttachmentMessage(`${attachment.fileName} uploaded.`);
       void queryClient.invalidateQueries({ queryKey });
+      setToast({ message: "Attachment uploaded.", variant: "success" });
     },
-    onError: (error) => setAttachmentError(error.message),
+    onError: (error) => {
+      setAttachmentError(error.message);
+      showError(error.message);
+    },
   });
 
   const deleteAttachmentMutation = useMutation({
@@ -178,8 +207,14 @@ export function TaskDetailModal({
         `/api/tasks/${taskId}/attachments/${attachmentId}`,
         { method: "DELETE" },
       ),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey }),
-    onError: (error) => setAttachmentError(error.message),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey });
+      setToast({ message: "Attachment deleted.", variant: "success" });
+    },
+    onError: (error) => {
+      setAttachmentError(error.message);
+      showError(error.message);
+    },
   });
 
   useEffect(() => {
@@ -203,6 +238,7 @@ export function TaskDetailModal({
     if (!file) return;
     if (file.size > 25 * 1024 * 1024) {
       setAttachmentError("Files must be 25 MB or smaller.");
+      showError("Files must be 25 MB or smaller.");
       event.target.value = "";
       return;
     }
@@ -251,15 +287,27 @@ export function TaskDetailModal({
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#64748B]">
               Overview
             </p>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#475569]">
-              {detail?.description || "No description added yet."}
-            </p>
+            {isLoading ? (
+              <div className="mt-4 space-y-2" role="status">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+                <span className="sr-only">Loading task details</span>
+              </div>
+            ) : (
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#475569]">
+                {detail?.description || "No description added yet."}
+              </p>
+            )}
 
             <dl className="mt-7 space-y-4 text-sm">
               <div className="flex items-start justify-between gap-4 border-t border-[#F1F5F9] pt-4">
                 <dt className="text-[#64748B]">Column</dt>
                 <dd className="text-right font-medium text-[#0F172A]">
-                  {detail?.column.name ?? "Loading"}
+                  {isLoading ? (
+                    <Skeleton className="ml-auto h-4 w-20" />
+                  ) : (
+                    (detail?.column.name ?? "Unknown")
+                  )}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-4 border-t border-[#F1F5F9] pt-4">
@@ -298,9 +346,12 @@ export function TaskDetailModal({
                   members={members}
                   onCancel={() => setIsEditing(false)}
                   onSave={async (taskId, input) => {
-                    await onEditTask(taskId, input);
-                    setIsEditing(false);
-                    void queryClient.invalidateQueries({ queryKey });
+                    const saved = await onEditTask(taskId, input);
+                    if (saved) {
+                      setIsEditing(false);
+                      void queryClient.invalidateQueries({ queryKey });
+                    }
+                    return saved;
                   }}
                   task={detail ?? task}
                 />
@@ -422,11 +473,29 @@ export function TaskDetailModal({
 
             <div className="mt-4 min-h-36 flex-1">
               {isLoading ? (
-                <p className="text-sm text-[#64748B]">Loading comments...</p>
+                <div className="space-y-4" role="status">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <span className="sr-only">Loading comments</span>
+                </div>
               ) : isError ? (
-                <p className="text-sm text-[#B91C1C]">
-                  We could not load the comments. Close and try again.
-                </p>
+                <div className="border border-[#FECACA] bg-[#FFF7F7] px-4 py-5">
+                  <p className="text-sm text-[#991B1B]">
+                    {taskQueryError instanceof Error
+                      ? taskQueryError.message
+                      : "We could not load the task details."}
+                  </p>
+                  <Button
+                    className="mt-3 gap-1 px-2 text-xs text-[#991B1B] hover:bg-[#FEE2E2] hover:text-[#7F1D1D]"
+                    onClick={() => void refetchTask()}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RefreshCw aria-hidden="true" />
+                    Retry
+                  </Button>
+                </div>
               ) : detail?.comments.length ? (
                 <ul>
                   {detail.comments.map((comment) => (
@@ -481,6 +550,11 @@ export function TaskDetailModal({
           </section>
         </div>
       </section>
+      <Toast
+        message={toast?.message ?? ""}
+        onDismiss={() => setToast(null)}
+        variant={toast?.variant}
+      />
     </div>
   );
 }

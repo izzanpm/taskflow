@@ -1,6 +1,10 @@
 export default function BoardListLoading() {
   return (
-    <main className="min-h-svh bg-[#F9F8F6] px-5 py-6 sm:px-8 sm:py-8">
+    <main
+      aria-busy="true"
+      aria-label="Loading boards"
+      className="min-h-svh bg-[#F9F8F6] px-5 py-6 sm:px-8 sm:py-8"
+    >
       <div className="mx-auto w-full max-w-[1200px] animate-pulse">
         <div className="h-6 w-32 border-b border-[#E2E8F0]" />
         <div className="py-12 sm:py-16">
