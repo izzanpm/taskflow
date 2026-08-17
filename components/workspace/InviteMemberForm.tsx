@@ -14,7 +14,10 @@ type InviteMemberFormProps = {
 };
 
 type InviteResponse = {
-  data?: WorkspaceInviteSummary & { inviteUrl: string };
+  data?: WorkspaceInviteSummary & {
+    inviteUrl: string;
+    emailSent: boolean;
+  };
   error?: string;
 };
 
@@ -58,7 +61,11 @@ export function InviteMemberForm({
 
       setEmail("");
       setInviteUrl(result.data.inviteUrl);
-      setMessage("Invite link ready. Share it with your teammate.");
+      setMessage(
+        result.data.emailSent
+          ? "Invite email sent. The invite link is ready to share too."
+          : "Invite link ready. Email delivery is not configured on this server.",
+      );
       onInviteCreated(result.data);
     } catch {
       setErrorMessage("We could not create the invite. Please try again.");
@@ -115,8 +122,8 @@ export function InviteMemberForm({
       </div>
 
       <p className="text-xs leading-5 text-[#64748B]">
-        The link expires in 7 days. Email delivery will be connected in the
-        collaboration phase.
+        The invite expires in 7 days. We will email the link when delivery is
+        configured.
       </p>
 
       {errorMessage ? (
@@ -165,7 +172,7 @@ export function InviteMemberForm({
         type="submit"
       >
         <MailPlus aria-hidden="true" />
-        {isSubmitting ? "Creating link..." : "Create invite link"}
+        {isSubmitting ? "Sending invite..." : "Send invite"}
       </Button>
     </form>
   );

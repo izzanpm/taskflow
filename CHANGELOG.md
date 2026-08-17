@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Completed Phase 5 Collaboration: task detail overlay with comments and direct
+  R2 attachment upload/delete flow, Resend invite email template and delivery
+  fallback, notification persistence for assignment/comment events, unread badge,
+  and mark-all-read action.
+- Added the `Notification` Prisma model and migration, with `PRD.md` kept in sync
+  as the schema source of truth. Existing `Comment` and `Attachment` models were
+  confirmed present in the initial migration.
+- Added `R2_PUBLIC_URL` and `RESEND_FROM_EMAIL` environment placeholders for the
+  collaboration integrations.
+- Added AWS SDK, Resend, and React Email dependencies and wired them into the R2
+  storage and workspace invite email helpers.
 - Completed Phase 4.5 Workspace Hub: protected workspace listing, host/admin and
   current-role context, workspace selection, create-workspace navigation, loading/
   empty/error states, and post-auth redirect updates.

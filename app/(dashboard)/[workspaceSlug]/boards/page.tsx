@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { BoardListClient } from "@/components/board/BoardListClient";
+import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { auth } from "@/lib/auth";
 import { getWorkspaceBoards } from "@/lib/boards";
 import { db } from "@/lib/db";
@@ -67,6 +68,7 @@ export default async function BoardListPage(
             </Link>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBadge />
             <Link
               className="hidden text-sm font-medium text-[#64748B] transition-colors hover:text-[#004BB0] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30 sm:inline"
               href="/settings/profile"

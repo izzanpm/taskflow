@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { WorkspaceSettingsPanel } from "@/components/workspace/WorkspaceSettingsPanel";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -91,6 +92,7 @@ export default async function WorkspaceSettingsPage(
             </Link>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBadge />
             <Link
               className="hidden text-sm font-medium text-[#64748B] transition-colors hover:text-[#004BB0] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30 sm:inline"
               href="/settings/profile"

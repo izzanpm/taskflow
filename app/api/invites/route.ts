@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { authorizationErrorResponse, requireRole } from "@/lib/authorization";
+import { sendWorkspaceInviteEmail } from "@/lib/email";
 import { createInviteToken, getInviteExpiry } from "@/lib/invites";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { db } from "@/lib/db";
@@ -93,12 +94,32 @@ export async function POST(request: Request) {
         expiresAt: true,
       },
     });
+    const workspace = await db.workspace.findUnique({
+      where: { id: result.data.workspaceId },
+      select: { name: true },
+    });
+    const inviteUrl = new URL(
+      `/invite/${invite.token}`,
+      request.url,
+    ).toString();
+    const emailResult = workspace
+      ? await sendWorkspaceInviteEmail({
+          to: invite.email,
+          workspaceName: workspace.name,
+          inviterName: session.user.name,
+          inviteUrl,
+          role: invite.role,
+          expiresAt: invite.expiresAt,
+        })
+      : { sent: false as const, status: "provider-error" as const };
 
     return NextResponse.json(
       {
         data: {
           ...invite,
-          inviteUrl: new URL(`/invite/${invite.token}`, request.url).toString(),
+          inviteUrl,
+          emailSent: emailResult.sent,
+          emailStatus: emailResult.status,
         },
       },
       { status: 201 },

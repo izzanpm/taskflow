@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { NotificationType } from "@/app/generated/prisma/enums";
 import { authorizationErrorResponse, requireRole } from "@/lib/authorization";
 import { db } from "@/lib/db";
 import { getNextOrder } from "@/lib/reorder";
@@ -35,7 +36,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireRole(request.headers, column.board.workspaceId);
+    const { session } = await requireRole(
+      request.headers,
+      column.board.workspaceId,
+    );
 
     if (result.data.assigneeId) {
       const assignee = await db.workspaceMember.findFirst({
@@ -58,30 +62,48 @@ export async function POST(request: Request) {
       where: { columnId: column.id },
       select: { id: true, order: true },
     });
-    const task = await db.task.create({
-      data: {
-        columnId: column.id,
-        title: result.data.title,
-        description: result.data.description ?? null,
-        assigneeId: result.data.assigneeId ?? null,
-        dueDate: result.data.dueDate
-          ? new Date(`${result.data.dueDate}T00:00:00.000Z`)
-          : null,
-        priority: result.data.priority,
-        order: getNextOrder(tasks),
-      },
-      select: {
-        id: true,
-        columnId: true,
-        title: true,
-        description: true,
-        assigneeId: true,
-        dueDate: true,
-        priority: true,
-        order: true,
-        updatedAt: true,
-        assignee: { select: { id: true, name: true, email: true } },
-      },
+    const task = await db.$transaction(async (transaction) => {
+      const createdTask = await transaction.task.create({
+        data: {
+          columnId: column.id,
+          title: result.data.title,
+          description: result.data.description ?? null,
+          assigneeId: result.data.assigneeId ?? null,
+          dueDate: result.data.dueDate
+            ? new Date(`${result.data.dueDate}T00:00:00.000Z`)
+            : null,
+          priority: result.data.priority,
+          order: getNextOrder(tasks),
+        },
+        select: {
+          id: true,
+          columnId: true,
+          title: true,
+          description: true,
+          assigneeId: true,
+          dueDate: true,
+          priority: true,
+          order: true,
+          updatedAt: true,
+          assignee: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      if (
+        createdTask.assigneeId &&
+        createdTask.assigneeId !== session.user.id
+      ) {
+        await transaction.notification.create({
+          data: {
+            userId: createdTask.assigneeId,
+            type: NotificationType.ASSIGNMENT,
+            taskId: createdTask.id,
+            actorId: session.user.id,
+          },
+        });
+      }
+
+      return createdTask;
     });
 
     return NextResponse.json({ data: task }, { status: 201 });

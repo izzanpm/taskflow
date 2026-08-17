@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { CreateWorkspaceForm } from "@/components/workspace/CreateWorkspaceForm";
 
 export const metadata = {
@@ -23,7 +24,10 @@ export default function CreateWorkspacePage() {
             />
             TaskFlow
           </Link>
-          <LogoutButton />
+          <div className="flex items-center gap-3">
+            <NotificationBadge />
+            <LogoutButton />
+          </div>
         </header>
 
         <section className="mx-auto max-w-xl py-16 sm:py-24">

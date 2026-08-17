@@ -40,6 +40,7 @@ type BoardColumnProps = {
       priority: TaskPriority;
     },
   ) => Promise<void>;
+  onOpenTask: (task: BoardColumnData["tasks"][number]) => void;
   onDeleteTask: (taskId: string) => Promise<void>;
 };
 
@@ -49,6 +50,7 @@ export function BoardColumn({
   onRename,
   onDelete,
   onCreateTask,
+  onOpenTask,
   onEditTask,
   onDeleteTask,
 }: BoardColumnProps) {
@@ -210,6 +212,7 @@ export function BoardColumn({
                   columnId={column.id}
                   onDelete={onDeleteTask}
                   onEdit={() => setEditingTaskId(task.id)}
+                  onOpen={onOpenTask}
                   task={task}
                 />
               )}

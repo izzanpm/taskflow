@@ -110,3 +110,25 @@ export const reorderTaskSchema = z.object({
   previousTaskId: nullableId,
   nextTaskId: nullableId,
 });
+
+export const createCommentSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty.")
+    .max(2000, "Comment must be 2000 characters or fewer."),
+});
+
+export const markNotificationsReadSchema = z.object({
+  all: z.literal(true),
+});
+
+export const createAttachmentSchema = z.object({
+  fileName: z.string().trim().min(1).max(255),
+  fileType: z.string().trim().min(1).max(255),
+  fileSize: z
+    .number()
+    .int()
+    .positive()
+    .max(25 * 1024 * 1024),
+});

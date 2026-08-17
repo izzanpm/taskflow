@@ -27,11 +27,18 @@ const priorityLabels = {
 type TaskCardProps = {
   task: BoardTask;
   columnId: string;
+  onOpen: (task: BoardTask) => void;
   onEdit: (task: BoardTask) => void;
   onDelete: (taskId: string) => void;
 };
 
-export function TaskCard({ task, columnId, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({
+  task,
+  columnId,
+  onOpen,
+  onEdit,
+  onDelete,
+}: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -48,6 +55,7 @@ export function TaskCard({ task, columnId, onEdit, onDelete }: TaskCardProps) {
     <article
       className={`group rounded-lg border border-[#E2E8F0] bg-white p-4 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#CBD5E1] hover:shadow-[0_8px_24px_rgba(15,23,42,0.07)] ${isDragging ? "opacity-40" : ""}`}
       ref={setNodeRef}
+      onClick={() => onOpen(task)}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -63,7 +71,10 @@ export function TaskCard({ task, columnId, onEdit, onDelete }: TaskCardProps) {
           <Button
             aria-label={`Edit ${task.title}`}
             className="size-7 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#004BB0]"
-            onClick={() => onEdit(task)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(task);
+            }}
             size="icon-sm"
             title={`Edit ${task.title}`}
             type="button"
@@ -74,7 +85,10 @@ export function TaskCard({ task, columnId, onEdit, onDelete }: TaskCardProps) {
           <Button
             aria-label={`Delete ${task.title}`}
             className="size-7 text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#B91C1C]"
-            onClick={() => onDelete(task.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(task.id);
+            }}
             size="icon-sm"
             title={`Delete ${task.title}`}
             type="button"

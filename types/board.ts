@@ -52,3 +52,44 @@ export type BoardSummary = {
   createdAt: string;
   columnCount: number;
 };
+
+export type TaskComment = {
+  id: string;
+  taskId: string;
+  body: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
+export type TaskAttachment = {
+  id: string;
+  taskId: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  createdAt: string;
+  uploadedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
+export type TaskDetail = BoardTask & {
+  createdAt: string;
+  column: {
+    id: string;
+    name: string;
+    board: {
+      id: string;
+      name: string;
+      workspaceId: string;
+    };
+  };
+  comments: TaskComment[];
+  attachments: TaskAttachment[];
+};

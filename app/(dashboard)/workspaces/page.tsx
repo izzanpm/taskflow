@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { WorkspaceList } from "@/components/workspace/WorkspaceList";
 import { auth } from "@/lib/auth";
 import { getUserWorkspaces } from "@/lib/workspaces";
@@ -35,6 +36,7 @@ export default async function WorkspacesPage() {
             TaskFlow
           </Link>
           <div className="flex items-center gap-3">
+            <NotificationBadge />
             <Link
               className="hidden text-sm font-medium text-[#64748B] transition-colors hover:text-[#004BB0] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30 sm:inline"
               href="/settings/profile"

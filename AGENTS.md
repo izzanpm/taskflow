@@ -168,19 +168,26 @@ are server-only unless explicitly marked otherwise.
 | POST   | /api/invites/[token]/accept         | Accept invite                   |
 | GET    | /api/boards/[id]                   | Get board with columns+tasks    |
 | POST   | /api/tasks                         | Create task                     |
+| GET    | /api/tasks/[id]                    | Get task detail with collaboration data |
 | PATCH  | /api/tasks/[id]                    | Update task (incl. reorder/move)|
 | POST   | /api/tasks/[id]/comments           | Add comment                     |
-| POST   | /api/tasks/[id]/attachments         | Get presigned upload URL        |
+| POST   | /api/tasks/[id]/attachments         | Create attachment + presigned upload URL |
+| DELETE | /api/tasks/[id]/attachments/[attachmentId] | Delete attachment               |
+| GET    | /api/notifications                  | List unread notifications       |
+| PATCH  | /api/notifications                  | Mark notifications as read      |
 
-All routes except auth/invite-accept require an authenticated session and workspace
-membership check.
+Workspace-scoped routes require an authenticated session and workspace membership
+check. Account, workspace-list, and notification routes require authentication but
+do not take a workspace membership parameter; invite acceptance is separately
+validated against the signed-in email and invite token.
 
 --
 
 ## File Storage Strategy
 - Client requests a presigned PUT URL from `/api/tasks/[id]/attachments`.
 - Client uploads directly to R2 (not proxied through the server).
-- Server only stores the resulting file URL/metadata in Postgres.
+- Server stores the file URL/metadata in Postgres and can remove the metadata and
+  object through the nested attachment DELETE route.
 
 --
 

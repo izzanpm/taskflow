@@ -93,3 +93,53 @@ export async function getTaskScope(taskId: string) {
     },
   });
 }
+
+export async function getTaskDetails(taskId: string) {
+  return db.task.findUnique({
+    where: { id: taskId },
+    select: {
+      id: true,
+      columnId: true,
+      title: true,
+      description: true,
+      assigneeId: true,
+      dueDate: true,
+      priority: true,
+      order: true,
+      createdAt: true,
+      updatedAt: true,
+      assignee: { select: { id: true, name: true, email: true } },
+      column: {
+        select: {
+          id: true,
+          name: true,
+          board: {
+            select: { id: true, name: true, workspaceId: true },
+          },
+        },
+      },
+      comments: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          taskId: true,
+          body: true,
+          createdAt: true,
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
+      attachments: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          taskId: true,
+          fileUrl: true,
+          fileName: true,
+          fileSize: true,
+          createdAt: true,
+          uploadedBy: { select: { id: true, name: true, email: true } },
+        },
+      },
+    },
+  });
+}

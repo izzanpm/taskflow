@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { NotificationType } from "@/app/generated/prisma/enums";
 import { authorizationErrorResponse, requireRole } from "@/lib/authorization";
-import { getTaskScope } from "@/lib/board";
+import { getTaskDetails, getTaskScope } from "@/lib/board";
 import { db } from "@/lib/db";
 import { calculateFractionalOrder, getNextOrder } from "@/lib/reorder";
 import { updateTaskSchema } from "@/lib/validation";
@@ -9,6 +10,28 @@ import { updateTaskSchema } from "@/lib/validation";
 type TaskRouteContext = {
   params: Promise<{ taskId: string }>;
 };
+
+export async function GET(request: Request, context: TaskRouteContext) {
+  const { taskId } = await context.params;
+  const task = await getTaskDetails(taskId);
+
+  if (!task) {
+    return NextResponse.json({ error: "Task not found." }, { status: 404 });
+  }
+
+  try {
+    await requireRole(request.headers, task.column.board.workspaceId);
+    return NextResponse.json({ data: task });
+  } catch (error) {
+    const response = authorizationErrorResponse(error);
+    if (response) return response;
+
+    return NextResponse.json(
+      { error: "We could not load this task. Please try again." },
+      { status: 500 },
+    );
+  }
+}
 
 function parseDueDate(value: string | null | undefined) {
   return value ? new Date(`${value}T00:00:00.000Z`) : null;
@@ -41,7 +64,10 @@ export async function PATCH(request: Request, context: TaskRouteContext) {
   }
 
   try {
-    await requireRole(request.headers, task.column.board.workspaceId);
+    const { session } = await requireRole(
+      request.headers,
+      task.column.board.workspaceId,
+    );
 
     const targetColumnId = result.data.columnId ?? task.columnId;
     const targetColumn = await db.column.findFirst({
@@ -88,37 +114,56 @@ export async function PATCH(request: Request, context: TaskRouteContext) {
       shouldReorder: hasExplicitPosition || isMovingColumn,
     });
 
-    const updatedTask = await db.task.update({
-      where: { id: taskId },
-      data: {
-        ...(result.data.title !== undefined && { title: result.data.title }),
-        ...(result.data.description !== undefined && {
-          description: result.data.description,
-        }),
-        ...(result.data.assigneeId !== undefined && {
-          assigneeId: result.data.assigneeId,
-        }),
-        ...(result.data.dueDate !== undefined && {
-          dueDate: parseDueDate(result.data.dueDate),
-        }),
-        ...(result.data.priority !== undefined && {
-          priority: result.data.priority,
-        }),
-        ...(isMovingColumn && { columnId: targetColumnId }),
-        ...(order !== null && { order }),
-      },
-      select: {
-        id: true,
-        columnId: true,
-        title: true,
-        description: true,
-        assigneeId: true,
-        dueDate: true,
-        priority: true,
-        order: true,
-        updatedAt: true,
-        assignee: { select: { id: true, name: true, email: true } },
-      },
+    const updatedTask = await db.$transaction(async (transaction) => {
+      const updated = await transaction.task.update({
+        where: { id: taskId },
+        data: {
+          ...(result.data.title !== undefined && { title: result.data.title }),
+          ...(result.data.description !== undefined && {
+            description: result.data.description,
+          }),
+          ...(result.data.assigneeId !== undefined && {
+            assigneeId: result.data.assigneeId,
+          }),
+          ...(result.data.dueDate !== undefined && {
+            dueDate: parseDueDate(result.data.dueDate),
+          }),
+          ...(result.data.priority !== undefined && {
+            priority: result.data.priority,
+          }),
+          ...(isMovingColumn && { columnId: targetColumnId }),
+          ...(order !== null && { order }),
+        },
+        select: {
+          id: true,
+          columnId: true,
+          title: true,
+          description: true,
+          assigneeId: true,
+          dueDate: true,
+          priority: true,
+          order: true,
+          updatedAt: true,
+          assignee: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      if (
+        result.data.assigneeId &&
+        result.data.assigneeId !== task.assigneeId &&
+        result.data.assigneeId !== session.user.id
+      ) {
+        await transaction.notification.create({
+          data: {
+            userId: result.data.assigneeId,
+            type: NotificationType.ASSIGNMENT,
+            taskId,
+            actorId: session.user.id,
+          },
+        });
+      }
+
+      return updated;
     });
 
     return NextResponse.json({ data: updatedTask });

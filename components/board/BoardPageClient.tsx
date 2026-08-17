@@ -22,6 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { BoardColumn } from "@/components/board/BoardColumn";
+import { TaskDetailModal } from "@/components/board/TaskDetailModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type {
@@ -162,6 +163,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
   const [columnName, setColumnName] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -290,14 +292,16 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
       requestApi<{ id: string }>(`/api/tasks/${taskId}`, {
         method: "DELETE",
       }),
-    onSuccess: ({ id }) =>
+    onSuccess: ({ id }) => {
       updateBoard((current) => ({
         ...current,
         columns: current.columns.map((column) => ({
           ...column,
           tasks: column.tasks.filter((task) => task.id !== id),
         })),
-      })),
+      }));
+      if (id === selectedTaskId) setSelectedTaskId(null);
+    },
     onError: (error) => setErrorMessage(error.message),
   });
 
@@ -496,6 +500,11 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         .flatMap((column) => column.tasks)
         .find((task) => task.id === activeId)
     : null;
+  const selectedTask = selectedTaskId
+    ? board.columns
+        .flatMap((column) => column.tasks)
+        .find((task) => task.id === selectedTaskId)
+    : null;
 
   return (
     <div>
@@ -562,6 +571,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
                 onDelete={handleDeleteColumn}
                 onDeleteTask={handleDeleteTask}
                 onEditTask={handleEditTask}
+                onOpenTask={(task) => setSelectedTaskId(task.id)}
                 onRename={handleRenameColumn}
               />
             ))}
@@ -591,6 +601,17 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {selectedTask ? (
+        <TaskDetailModal
+          currentUserId={board.currentUserId}
+          members={board.members}
+          onEditTask={handleEditTask}
+          onClose={() => setSelectedTaskId(null)}
+          task={selectedTask}
+          taskId={selectedTask.id}
+        />
+      ) : null}
     </div>
   );
 }

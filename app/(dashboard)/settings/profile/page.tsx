@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -44,7 +45,10 @@ export default async function ProfilePage() {
             />
             TaskFlow
           </Link>
-          <LogoutButton />
+          <div className="flex items-center gap-3">
+            <NotificationBadge />
+            <LogoutButton />
+          </div>
         </header>
 
         <section className="py-12 sm:py-16">
