@@ -82,7 +82,7 @@ export function NotificationBadge() {
             ? `${unreadCount} unread notifications`
             : "Notifications"
         }
-        className="relative size-9 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#004BB0]"
+        className="relative size-11 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#004BB0] focus-visible:border-taskflow-brand focus-visible:ring-taskflow-brand/60"
         onClick={() => setIsOpen((open) => !open)}
         size="icon"
         title="Notifications"

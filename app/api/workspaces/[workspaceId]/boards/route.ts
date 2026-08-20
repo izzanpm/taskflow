@@ -63,6 +63,8 @@ export async function POST(request: Request, context: RouteContext) {
           ...board,
           createdAt: board.createdAt.toISOString(),
           columnCount: 0,
+          taskCount: 0,
+          lastActivityAt: null,
         },
       },
       { status: 201 },

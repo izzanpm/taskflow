@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Polished the board detail experience with dedicated task drag handles,
+  accessible dialogs and column menus, safer destructive and draft-discard
+  actions, progressive filters, stronger mobile targets, and a board-first layout.
+- Polished the workspace boards launcher with task activity context, direct admin
+  contact for blocked members, improved mobile creation flow and touch targets,
+  layout-matched loading states, and scoped TaskFlow color tokens.
 - Completed Phase 5 Collaboration: task detail overlay with comments and direct
   R2 attachment upload/delete flow, Resend invite email template and delivery
   fallback, notification persistence for assignment/comment events, unread badge,

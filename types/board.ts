@@ -51,6 +51,8 @@ export type BoardSummary = {
   name: string;
   createdAt: string;
   columnCount: number;
+  taskCount: number;
+  lastActivityAt: string | null;
 };
 
 export type TaskComment = {

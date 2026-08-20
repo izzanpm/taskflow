@@ -12,7 +12,23 @@ import { CSS } from "@dnd-kit/utilities";
 import { CreateTaskForm } from "@/components/board/CreateTaskForm";
 import { EditTaskForm } from "@/components/board/EditTaskForm";
 import { TaskCard } from "@/components/board/TaskCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import type {
   BoardColumn as BoardColumnData,
@@ -41,7 +57,7 @@ type BoardColumnProps = {
     },
   ) => Promise<boolean>;
   onOpenTask: (task: BoardColumnData["tasks"][number]) => void;
-  onDeleteTask: (taskId: string) => Promise<void>;
+  onDeleteTask: (taskId: string) => Promise<boolean>;
   hasActiveFilters: boolean;
   totalTaskCount: number;
 };
@@ -60,11 +76,13 @@ export function BoardColumn({
 }: BoardColumnProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [name, setName] = useState(column.name);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const {
     attributes,
     listeners,
+    setActivatorNodeRef,
     setNodeRef,
     transform,
     transition,
@@ -83,11 +101,6 @@ export function BoardColumn({
     if (renamed) setIsRenaming(false);
   }
 
-  async function handleDelete() {
-    if (!window.confirm(`Delete ${column.name} and its tasks?`)) return;
-    await onDelete(column.id);
-  }
-
   return (
     <section
       aria-label={`${column.name} column`}
@@ -99,16 +112,19 @@ export function BoardColumn({
       }}
     >
       <div className="flex items-center gap-2 border-b border-[#E2E8F0] px-1 pb-3">
-        <button
+        <Button
           aria-label={`Drag ${column.name}`}
-          className="cursor-grab text-[#94A3B8] transition-colors hover:text-[#004BB0] active:cursor-grabbing"
+          className="size-11 cursor-grab touch-none text-taskflow-muted hover:bg-taskflow-surface hover:text-taskflow-brand active:cursor-grabbing sm:size-8"
+          ref={setActivatorNodeRef}
+          size="icon"
           title={`Drag ${column.name}`}
           type="button"
+          variant="ghost"
           {...attributes}
           {...listeners}
         >
           <GripVertical aria-hidden="true" className="size-4" />
-        </button>
+        </Button>
 
         {isRenaming ? (
           <form
@@ -123,16 +139,22 @@ export function BoardColumn({
               onChange={(event) => setName(event.target.value)}
               value={name}
             />
-            <Button aria-label="Save column name" size="icon-sm" type="submit">
+            <Button
+              aria-label="Save column name"
+              className="size-11 sm:size-8"
+              size="icon"
+              type="submit"
+            >
               <Check aria-hidden="true" />
             </Button>
             <Button
               aria-label="Cancel rename"
+              className="size-11 sm:size-8"
               onClick={() => {
                 setName(column.name);
                 setIsRenaming(false);
               }}
-              size="icon-sm"
+              size="icon"
               type="button"
               variant="ghost"
             >
@@ -151,47 +173,72 @@ export function BoardColumn({
                   : column.tasks.length}
               </span>
             </div>
-            <div className="relative">
-              <Button
-                aria-expanded={isMenuOpen}
-                aria-label={`Column actions for ${column.name}`}
-                className="size-7 text-[#64748B] hover:bg-white hover:text-[#004BB0]"
-                onClick={() => setIsMenuOpen((open) => !open)}
-                size="icon-sm"
-                title={`Column actions for ${column.name}`}
-                type="button"
-                variant="ghost"
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    aria-label={`Column actions for ${column.name}`}
+                    className="size-11 text-taskflow-muted hover:bg-taskflow-surface hover:text-taskflow-brand sm:size-8"
+                    size="icon"
+                    title={`Column actions for ${column.name}`}
+                    type="button"
+                    variant="ghost"
+                  />
+                }
               >
                 <MoreHorizontal aria-hidden="true" />
-              </Button>
-              {isMenuOpen ? (
-                <div className="absolute right-0 top-8 z-10 w-32 rounded-lg border border-[#E2E8F0] bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.1)]">
-                  <Button
-                    className="w-full justify-start px-2 text-xs text-[#0F172A]"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      setIsRenaming(true);
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36">
+                <DropdownMenuItem onClick={() => setIsRenaming(true)}>
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  variant="destructive"
+                >
+                  <Trash2 aria-hidden="true" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <AlertDialog
+              onOpenChange={(open, eventDetails) => {
+                if (isDeleting && !open) {
+                  eventDetails.cancel();
+                  return;
+                }
+                setIsDeleteDialogOpen(open);
+              }}
+              open={isDeleteDialogOpen}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Delete &quot;{column.name}&quot;?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This permanently deletes the column and all tasks inside it.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={isDeleting}
+                    onClick={async () => {
+                      setIsDeleting(true);
+                      const deleted = await onDelete(column.id);
+                      setIsDeleting(false);
+                      if (deleted) setIsDeleteDialogOpen(false);
                     }}
-                    type="button"
-                    variant="ghost"
+                    variant="destructive"
                   >
-                    Rename
-                  </Button>
-                  <Button
-                    className="w-full justify-start px-2 text-xs text-[#B91C1C] hover:bg-[#FEF2F2] hover:text-[#B91C1C]"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      void handleDelete();
-                    }}
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Trash2 aria-hidden="true" />
-                    Delete
-                  </Button>
-                </div>
-              ) : null}
-            </div>
+                    {isDeleting ? "Deleting" : "Delete column"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>

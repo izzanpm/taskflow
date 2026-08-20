@@ -27,6 +27,7 @@ import { TaskDetailModal } from "@/components/board/TaskDetailModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toast, type ToastVariant } from "@/components/ui/toast";
+import { hasStructuredTaskFilters } from "@/lib/board-ui.mjs";
 import {
   countBoardTasks,
   emptyTaskFilters,
@@ -181,6 +182,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [toast, setToast] = useState<BoardToast | null>(null);
   const [filters, setFilters] = useState<TaskFilterState>(emptyTaskFilters);
+  const [showFilters, setShowFilters] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, {
@@ -528,12 +530,12 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
     }
   }
 
-  async function handleDeleteTask(taskId: string) {
-    if (!window.confirm("Delete this task?")) return;
+  async function handleDeleteTask(taskId: string): Promise<boolean> {
     try {
       await deleteTaskMutation.mutateAsync(taskId);
+      return true;
     } catch {
-      // The mutation already exposes the server error in the board alert.
+      return false;
     }
   }
 
@@ -564,6 +566,8 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
   const totalTaskCount = countBoardTasks(board.columns);
   const visibleTaskCount = countBoardTasks(filteredColumns);
   const hasActiveFilters = hasActiveTaskFilters(filters);
+  const hasStructuredFilters = hasStructuredTaskFilters(filters);
+  const filtersVisible = showFilters || hasStructuredFilters;
   const boardErrorMessage = isBoardError
     ? boardQueryError instanceof Error
       ? boardQueryError.message
@@ -594,15 +598,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-4 border-b border-[#E2E8F0] pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#64748B]">
-            Board flow
-          </p>
-          <p className="mt-1 text-sm text-[#64748B]">
-            Drag columns and tasks to keep the work moving.
-          </p>
-        </div>
+      <div className="flex justify-end border-b border-taskflow-border pb-4">
         <form
           className="flex w-full gap-2 sm:w-auto"
           onSubmit={handleCreateColumn}
@@ -621,7 +617,7 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
             type="submit"
           >
             <Plus aria-hidden="true" />
-            {createColumnMutation.isPending ? "Adding" : "Column"}
+            {createColumnMutation.isPending ? "Adding" : "Add column"}
           </Button>
         </form>
       </div>
@@ -634,17 +630,17 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
 
       <section
         aria-label="Task search and filters"
-        className="mt-5 border border-[#E2E8F0] bg-white p-3 sm:p-4"
+        className="mt-4 rounded-lg border border-taskflow-border bg-taskflow-surface p-3 sm:p-4"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative min-w-0 flex-1">
             <Search
               aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#94A3B8]"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-taskflow-muted"
             />
             <Input
               aria-label="Search tasks"
-              className="h-10 border-[#CBD5E1] pl-9 pr-9 text-sm"
+              className="h-11 border-taskflow-border-strong pr-12 pl-9 text-sm sm:h-10"
               onChange={(event) =>
                 setFilters((current) => ({
                   ...current,
@@ -658,11 +654,11 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
             {filters.search ? (
               <Button
                 aria-label="Clear task search"
-                className="absolute right-1 top-1/2 size-8 -translate-y-1/2 text-[#64748B] hover:bg-[#F1F5F9]"
+                className="absolute right-0 top-1/2 size-11 -translate-y-1/2 text-taskflow-muted hover:bg-taskflow-muted-surface sm:size-10"
                 onClick={() =>
                   setFilters((current) => ({ ...current, search: "" }))
                 }
-                size="icon-sm"
+                size="icon"
                 title="Clear task search"
                 type="button"
                 variant="ghost"
@@ -671,16 +667,39 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
               </Button>
             ) : null}
           </div>
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
-            <p className="text-xs text-[#64748B]">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+            <p
+              aria-live="polite"
+              className="mr-auto text-xs text-taskflow-muted sm:mr-1"
+            >
               {hasActiveFilters
                 ? `${visibleTaskCount} of ${totalTaskCount} tasks shown`
                 : `${totalTaskCount} ${totalTaskCount === 1 ? "task" : "tasks"}`}
             </p>
+            <Button
+              aria-controls="board-task-filters"
+              aria-expanded={filtersVisible}
+              className="h-11 gap-1.5 text-taskflow-muted sm:h-8"
+              disabled={hasStructuredFilters}
+              onClick={() => setShowFilters((visible) => !visible)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <ListFilter aria-hidden="true" />
+              {hasStructuredFilters
+                ? "Filters active"
+                : filtersVisible
+                  ? "Hide filters"
+                  : "Filters"}
+            </Button>
             {hasActiveFilters ? (
               <Button
-                className="gap-1 px-2 text-xs text-[#004BB0]"
-                onClick={() => setFilters(emptyTaskFilters)}
+                className="h-11 gap-1 px-2 text-xs text-taskflow-brand sm:h-8"
+                onClick={() => {
+                  setFilters(emptyTaskFilters);
+                  setShowFilters(false);
+                }}
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -691,76 +710,81 @@ export function BoardPageClient({ initialBoard }: { initialBoard: BoardView }) {
             ) : null}
           </div>
         </div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-[#64748B]">
-            <span className="sr-only">Filter by assignee</span>
-            <select
-              aria-label="Filter by assignee"
-              className="h-9 min-w-0 w-full rounded-lg border border-[#CBD5E1] bg-white px-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#004BB0] focus:ring-3 focus:ring-[#004BB0]/20"
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  assigneeId: event.target.value,
-                }))
-              }
-              value={filters.assigneeId}
-            >
-              <option value="ALL">All assignees</option>
-              <option value="UNASSIGNED">Unassigned</option>
-              {board.members.map((member) => (
-                <option key={member.userId} value={member.userId}>
-                  {member.user.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-[#64748B]">
-            <span className="sr-only">Filter by column</span>
-            <select
-              aria-label="Filter by column"
-              className="h-9 min-w-0 w-full rounded-lg border border-[#CBD5E1] bg-white px-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#004BB0] focus:ring-3 focus:ring-[#004BB0]/20"
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  columnId: event.target.value,
-                }))
-              }
-              value={filters.columnId}
-            >
-              <option value="ALL">All columns</option>
-              {board.columns.map((column) => (
-                <option key={column.id} value={column.id}>
-                  {column.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-[#64748B]">
-            <span className="sr-only">Filter by due date</span>
-            <select
-              aria-label="Filter by due date"
-              className="h-9 min-w-0 w-full rounded-lg border border-[#CBD5E1] bg-white px-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#004BB0] focus:ring-3 focus:ring-[#004BB0]/20"
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  dueDate: event.target.value as TaskFilterState["dueDate"],
-                }))
-              }
-              value={filters.dueDate}
-            >
-              <option value="ALL">Any due date</option>
-              <option value="OVERDUE">Overdue</option>
-              <option value="TODAY">Due today</option>
-              <option value="NEXT_7_DAYS">Next 7 days</option>
-              <option value="NO_DATE">No due date</option>
-            </select>
-          </label>
-        </div>
+        {filtersVisible ? (
+          <div
+            className="mt-3 grid gap-3 sm:grid-cols-3"
+            id="board-task-filters"
+          >
+            <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-taskflow-muted">
+              <span className="sr-only">Filter by assignee</span>
+              <select
+                aria-label="Filter by assignee"
+                className="h-11 min-w-0 w-full rounded-lg border border-taskflow-border-strong bg-taskflow-surface px-2.5 text-sm font-normal text-taskflow-ink outline-none focus:border-taskflow-brand focus:ring-3 focus:ring-taskflow-brand/20 sm:h-9"
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    assigneeId: event.target.value,
+                  }))
+                }
+                value={filters.assigneeId}
+              >
+                <option value="ALL">All assignees</option>
+                <option value="UNASSIGNED">Unassigned</option>
+                {board.members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.user.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-taskflow-muted">
+              <span className="sr-only">Filter by column</span>
+              <select
+                aria-label="Filter by column"
+                className="h-11 min-w-0 w-full rounded-lg border border-taskflow-border-strong bg-taskflow-surface px-2.5 text-sm font-normal text-taskflow-ink outline-none focus:border-taskflow-brand focus:ring-3 focus:ring-taskflow-brand/20 sm:h-9"
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    columnId: event.target.value,
+                  }))
+                }
+                value={filters.columnId}
+              >
+                <option value="ALL">All columns</option>
+                {board.columns.map((column) => (
+                  <option key={column.id} value={column.id}>
+                    {column.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-taskflow-muted">
+              <span className="sr-only">Filter by due date</span>
+              <select
+                aria-label="Filter by due date"
+                className="h-11 min-w-0 w-full rounded-lg border border-taskflow-border-strong bg-taskflow-surface px-2.5 text-sm font-normal text-taskflow-ink outline-none focus:border-taskflow-brand focus:ring-3 focus:ring-taskflow-brand/20 sm:h-9"
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    dueDate: event.target.value as TaskFilterState["dueDate"],
+                  }))
+                }
+                value={filters.dueDate}
+              >
+                <option value="ALL">Any due date</option>
+                <option value="OVERDUE">Overdue</option>
+                <option value="TODAY">Due today</option>
+                <option value="NEXT_7_DAYS">Next 7 days</option>
+                <option value="NO_DATE">No due date</option>
+              </select>
+            </label>
+          </div>
+        ) : null}
         {hasActiveFilters ? (
-          <p className="mt-3 flex items-center gap-1.5 text-xs text-[#64748B]">
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-taskflow-muted">
             <ListFilter
               aria-hidden="true"
-              className="size-3.5 text-[#004BB0]"
+              className="size-3.5 text-taskflow-brand"
             />
             Clear filters to reorder columns or tasks.
           </p>

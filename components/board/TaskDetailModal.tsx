@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  type ChangeEvent,
-  type FormEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
 import {
   MessageCircle,
   Paperclip,
@@ -18,10 +12,29 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { EditTaskForm } from "@/components/board/EditTaskForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toast, type ToastVariant } from "@/components/ui/toast";
+import { hasUnsavedTaskDetailWork } from "@/lib/board-ui.mjs";
 import type {
   BoardMember,
   BoardTask,
@@ -32,6 +45,13 @@ import type {
 } from "@/types/board";
 
 type ApiResponse<T> = { data?: T; error?: string };
+
+const priorityLabels = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  URGENT: "Urgent",
+} as const;
 
 async function requestApi<T>(url: string, init?: RequestInit) {
   const response = await fetch(url, init);
@@ -72,7 +92,10 @@ function CommentItem({ comment }: { comment: TaskComment }) {
             <p className="text-sm font-semibold text-[#0F172A]">
               {comment.user.name}
             </p>
-            <time className="text-[11px] text-[#94A3B8]">
+            <time
+              className="text-xs text-taskflow-muted"
+              dateTime={comment.createdAt}
+            >
               {formatDate(comment.createdAt)}
             </time>
           </div>
@@ -120,6 +143,10 @@ export function TaskDetailModal({
   const [attachmentError, setAttachmentError] = useState("");
   const [attachmentMessage, setAttachmentMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<
+    string | null
+  >(null);
   const [toast, setToast] = useState<{
     message: string;
     variant: ToastVariant;
@@ -217,15 +244,6 @@ export function TaskDetailModal({
     },
   });
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedBody = body.trim();
@@ -248,38 +266,49 @@ export function TaskDetailModal({
 
   const detail = data ?? null;
   const assignee = detail?.assignee ?? task.assignee;
+  const dueDate = detail?.dueDate ?? task.dueDate;
+  const hasUnsavedWork = hasUnsavedTaskDetailWork(body, isEditing);
 
   return (
-    <div
-      aria-label={`Task details for ${task.title}`}
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[#0F172A]/35 p-0 sm:items-center sm:p-6"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+    <Dialog
+      onOpenChange={(open, eventDetails) => {
+        if (open) return;
+        if (hasUnsavedWork) {
+          eventDetails.cancel();
+          setIsDiscardDialogOpen(true);
+          return;
+        }
+        onClose();
       }}
-      role="dialog"
+      open
     >
-      <section className="flex max-h-[92svh] w-full max-w-4xl flex-col overflow-hidden rounded-t-xl border border-[#CBD5E1] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.2)] sm:rounded-xl">
-        <header className="flex items-start justify-between gap-4 border-b border-[#E2E8F0] px-5 py-4 sm:px-7">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#64748B]">
-              Task detail
-            </p>
-            <h2 className="mt-2 truncate text-lg font-semibold text-[#0F172A]">
+      <DialogContent
+        className="top-auto bottom-0 flex max-h-[92svh] w-full max-w-none -translate-x-1/2 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-xl p-0 sm:top-1/2 sm:bottom-auto sm:max-w-4xl sm:-translate-y-1/2 sm:rounded-xl"
+        showCloseButton={false}
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-taskflow-border px-5 py-4 sm:px-7">
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="truncate font-sans text-lg font-semibold leading-6 text-taskflow-ink">
               {detail?.title ?? task.title}
-            </h2>
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Review task information, attachments, and comments.
+            </DialogDescription>
           </div>
-          <Button
-            aria-label="Close task details"
-            className="size-8 shrink-0 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
-            onClick={onClose}
-            size="icon-sm"
-            title="Close task details"
-            type="button"
-            variant="ghost"
+          <DialogClose
+            render={
+              <Button
+                aria-label="Close task details"
+                className="size-11 shrink-0 text-taskflow-muted hover:bg-taskflow-muted-surface hover:text-taskflow-ink sm:size-8"
+                size="icon"
+                title="Close task details"
+                type="button"
+                variant="ghost"
+              />
+            }
           >
             <X aria-hidden="true" />
-          </Button>
+          </DialogClose>
         </header>
 
         <div className="grid min-h-0 overflow-y-auto lg:grid-cols-[minmax(0,0.9fr)_minmax(20rem,1.1fr)]">
@@ -319,23 +348,27 @@ export function TaskDetailModal({
               <div className="flex items-start justify-between gap-4 border-t border-[#F1F5F9] pt-4">
                 <dt className="text-[#64748B]">Priority</dt>
                 <dd className="text-right font-medium text-[#0F172A]">
-                  {detail?.priority ?? task.priority}
+                  {priorityLabels[detail?.priority ?? task.priority]}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-4 border-t border-[#F1F5F9] pt-4">
                 <dt className="text-[#64748B]">Due date</dt>
                 <dd className="text-right font-medium text-[#0F172A]">
-                  {detail?.dueDate
-                    ? new Intl.DateTimeFormat("en", {
+                  {dueDate ? (
+                    <time dateTime={dueDate}>
+                      {new Intl.DateTimeFormat("en", {
                         dateStyle: "medium",
-                      }).format(new Date(detail.dueDate))
-                    : "No due date"}
+                      }).format(new Date(dueDate))}
+                    </time>
+                  ) : (
+                    "No due date"
+                  )}
                 </dd>
               </div>
             </dl>
 
             {members.length > 0 ? (
-              <p className="mt-7 text-xs leading-5 text-[#94A3B8]">
+              <p className="mt-7 text-xs leading-5 text-taskflow-muted">
                 Use Edit task details to update the task or change its assignee.
               </p>
             ) : null}
@@ -359,7 +392,7 @@ export function TaskDetailModal({
             ) : (
               <div className="mt-7 border-t border-[#E2E8F0] pt-5">
                 <Button
-                  className="w-full sm:w-auto"
+                  className="h-11 w-full sm:h-8 sm:w-auto"
                   onClick={() => setIsEditing(true)}
                   type="button"
                   variant="outline"
@@ -388,6 +421,7 @@ export function TaskDetailModal({
                   type="file"
                 />
                 <Button
+                  className="h-11 sm:h-7"
                   disabled={uploadMutation.isPending}
                   onClick={() => fileInputRef.current?.click()}
                   size="sm"
@@ -398,6 +432,9 @@ export function TaskDetailModal({
                   {uploadMutation.isPending ? "Uploading" : "Attach"}
                 </Button>
               </div>
+              <p className="mt-2 text-xs text-taskflow-muted">
+                Maximum file size: 25 MB.
+              </p>
               {attachmentError ? (
                 <p className="mt-2 text-xs text-[#B91C1C]">{attachmentError}</p>
               ) : attachmentMessage ? (
@@ -421,36 +458,82 @@ export function TaskDetailModal({
                         >
                           {attachment.fileName}
                         </a>
-                        <p className="mt-1 text-[11px] text-[#94A3B8]">
+                        <p className="mt-1 text-xs text-taskflow-muted">
                           {formatFileSize(attachment.fileSize)} -{" "}
                           {attachment.uploadedBy.name}
                         </p>
                       </div>
                       {attachment.uploadedBy.id === currentUserId ? (
-                        <Button
-                          aria-label={`Delete ${attachment.fileName}`}
-                          className="size-7 shrink-0 text-[#94A3B8] hover:bg-[#FEF2F2] hover:text-[#B91C1C]"
-                          disabled={deleteAttachmentMutation.isPending}
-                          onClick={() => {
-                            if (
-                              !window.confirm(`Delete ${attachment.fileName}?`)
-                            )
+                        <AlertDialog
+                          onOpenChange={(open, eventDetails) => {
+                            if (deleteAttachmentMutation.isPending && !open) {
+                              eventDetails.cancel();
                               return;
-                            deleteAttachmentMutation.mutate(attachment.id);
+                            }
+                            setDeletingAttachmentId(
+                              open ? attachment.id : null,
+                            );
                           }}
-                          size="icon-sm"
-                          title={`Delete ${attachment.fileName}`}
-                          type="button"
-                          variant="ghost"
+                          open={deletingAttachmentId === attachment.id}
                         >
-                          <Trash2 aria-hidden="true" />
-                        </Button>
+                          <AlertDialogTrigger
+                            render={
+                              <Button
+                                aria-label={`Delete ${attachment.fileName}`}
+                                className="size-11 shrink-0 text-taskflow-muted hover:bg-taskflow-danger-surface hover:text-taskflow-danger-border sm:size-8"
+                                disabled={deleteAttachmentMutation.isPending}
+                                size="icon"
+                                title={`Delete ${attachment.fileName}`}
+                                type="button"
+                                variant="ghost"
+                              />
+                            }
+                          >
+                            <Trash2 aria-hidden="true" />
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Delete &quot;{attachment.fileName}&quot;?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This permanently removes the attachment from
+                                this task.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel
+                                disabled={deleteAttachmentMutation.isPending}
+                              >
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                disabled={deleteAttachmentMutation.isPending}
+                                onClick={async () => {
+                                  try {
+                                    await deleteAttachmentMutation.mutateAsync(
+                                      attachment.id,
+                                    );
+                                    setDeletingAttachmentId(null);
+                                  } catch {
+                                    // The mutation keeps the dialog open and surfaces the error.
+                                  }
+                                }}
+                                variant="destructive"
+                              >
+                                {deleteAttachmentMutation.isPending
+                                  ? "Deleting"
+                                  : "Delete attachment"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       ) : null}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-xs text-[#94A3B8]">
+                <p className="mt-3 text-xs text-taskflow-muted">
                   No files attached.
                 </p>
               )}
@@ -540,6 +623,7 @@ export function TaskDetailModal({
               ) : null}
               <div className="mt-3 flex justify-end">
                 <Button
+                  className="h-11 sm:h-8"
                   disabled={!body.trim() || commentMutation.isPending}
                   type="submit"
                 >
@@ -549,12 +633,31 @@ export function TaskDetailModal({
             </form>
           </section>
         </div>
-      </section>
+      </DialogContent>
+      <AlertDialog
+        onOpenChange={setIsDiscardDialogOpen}
+        open={isDiscardDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unfinished changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your unsent comment or active task edits will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction onClick={onClose} variant="destructive">
+              Discard changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Toast
         message={toast?.message ?? ""}
         onDismiss={() => setToast(null)}
         variant={toast?.variant}
       />
-    </div>
+    </Dialog>
   );
 }

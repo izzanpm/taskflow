@@ -29,39 +29,47 @@ export default async function BoardListPage(
       name: true,
       slug: true,
       members: {
-        where: { userId: session.user.id },
-        select: { role: true },
+        orderBy: { createdAt: "asc" },
+        select: {
+          userId: true,
+          role: true,
+          user: { select: { name: true, email: true } },
+        },
       },
     },
   });
 
   if (!workspace) notFound();
 
-  const currentMember = workspace.members[0];
+  const currentMember = workspace.members.find(
+    (member) => member.userId === session.user.id,
+  );
   if (!currentMember) redirect("/workspaces");
 
+  const adminContact =
+    workspace.members.find((member) => member.role === "ADMIN")?.user ?? null;
   const boards = await getWorkspaceBoards(workspace.id);
 
   return (
-    <main className="min-h-svh bg-[#F9F8F6] px-5 py-6 text-[#0F172A] sm:px-8 sm:py-8">
+    <main className="min-h-svh bg-taskflow-canvas px-5 py-6 text-taskflow-ink sm:px-8 sm:py-8">
       <div className="mx-auto w-full max-w-[1200px]">
-        <header className="flex items-center justify-between border-b border-[#E2E8F0] pb-5">
+        <header className="flex items-center justify-between border-b border-taskflow-border pb-5">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Link
-              className="flex shrink-0 items-center gap-2 text-sm font-semibold tracking-[-0.02em] text-[#004BB0] transition-colors hover:text-[#033476] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30"
+              className="flex shrink-0 items-center gap-2 text-sm font-semibold tracking-[-0.02em] text-taskflow-brand transition-colors hover:text-taskflow-brand-hover focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-taskflow-brand/60"
               href="/workspaces"
             >
               <span
                 aria-hidden="true"
-                className="size-2 rounded-full bg-[#004BB0]"
+                className="size-2 rounded-full bg-taskflow-brand"
               />
               TaskFlow
             </Link>
-            <span aria-hidden="true" className="text-[#CBD5E1]">
+            <span aria-hidden="true" className="text-taskflow-border-strong">
               /
             </span>
             <Link
-              className="truncate text-sm text-[#64748B] transition-colors hover:text-[#004BB0] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30"
+              className="truncate text-sm text-taskflow-muted transition-colors hover:text-taskflow-brand focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-taskflow-brand/60"
               href={`/${workspace.slug}/settings`}
             >
               {workspace.name}
@@ -70,7 +78,7 @@ export default async function BoardListPage(
           <div className="flex items-center gap-3">
             <NotificationBadge />
             <Link
-              className="hidden text-sm font-medium text-[#64748B] transition-colors hover:text-[#004BB0] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30 sm:inline"
+              className="hidden text-sm font-medium text-taskflow-muted transition-colors hover:text-taskflow-brand focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-taskflow-brand/60 sm:inline"
               href="/settings/profile"
             >
               Profile
@@ -81,16 +89,17 @@ export default async function BoardListPage(
 
         <section className="py-12 sm:py-16">
           <div className="max-w-2xl">
-            <h1 className="font-[family-name:var(--font-instrument-serif)] text-4xl font-normal tracking-[-0.02em] text-[#0F172A] sm:text-5xl">
+            <h1 className="font-[family-name:var(--font-instrument-serif)] text-4xl font-normal tracking-[-0.02em] text-taskflow-ink sm:text-5xl">
               {workspace.name} boards.
             </h1>
-            <p className="mt-4 max-w-[52ch] text-base leading-7 text-[#64748B]">
+            <p className="mt-4 max-w-[52ch] text-base leading-7 text-taskflow-muted">
               Choose a board to see the work in motion, or create a focused
               space for the next project.
             </p>
           </div>
 
           <BoardListClient
+            adminContact={adminContact}
             initialBoards={boards}
             isAdmin={currentMember.role === "ADMIN"}
             workspaceId={workspace.id}

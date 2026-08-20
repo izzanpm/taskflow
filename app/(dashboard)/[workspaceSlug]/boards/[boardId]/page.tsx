@@ -78,19 +78,12 @@ export default async function BoardPage(
           </div>
         </header>
 
-        <section className="py-10 sm:py-14">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <section className="py-7 sm:py-9">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
-              <p className="text-sm font-semibold text-[#004BB0]">
-                Kanban board
-              </p>
-              <h1 className="mt-3 font-[family-name:var(--font-instrument-serif)] text-4xl font-normal tracking-[-0.02em] text-[#0F172A] sm:text-5xl">
-                {board.name}.
+              <h1 className="font-[family-name:var(--font-instrument-serif)] text-3xl font-normal tracking-[-0.02em] text-[#0F172A] sm:text-4xl">
+                {board.name}
               </h1>
-              <p className="mt-4 max-w-[56ch] text-base leading-7 text-[#64748B]">
-                A clear view of the work, with enough room for the details that
-                keep your team moving.
-              </p>
             </div>
             <Link
               className="text-sm font-medium text-[#64748B] transition-colors hover:text-[#004BB0] focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#004BB0]/30"
@@ -100,7 +93,7 @@ export default async function BoardPage(
             </Link>
           </div>
 
-          <div className="mt-10">
+          <div className="mt-6 sm:mt-8">
             <BoardPageClient initialBoard={boardView} />
           </div>
         </section>
